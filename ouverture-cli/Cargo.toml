@@ -1,0 +1,15 @@
+[package]
+name = "ouverture-cli"
+version = "0.1.0"
+edition = "2021"
+authors = ["Michael Bleuez <michael.bleuez2@gmail.com>"]
+license = "MIT"
+description = "A next-generation music player and manager library CLI based ouverture-core"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+ouverture-core = { path = "../ouverture-core"}
+tokio = { version = "1.12.0", features = ["full"] }
+color-eyre = "0.5"
+structopt = "0.3"

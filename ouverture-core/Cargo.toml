@@ -1,0 +1,27 @@
+[package]
+name = "ouverture-core"
+description = "A next-generation music player and manager library"
+version = "0.1.0"
+edition = "2021"
+authors = ["Michael Bleuez <michael.bleuez2@gmail.com>"]
+license = "MIT"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+pg-embed = "0.6.1"
+tokio = { version = "1.12.0", features = ["full"] }
+platform-dirs = "0.3.0"
+bincode = "1.3.3"
+serde = { version = "1.0", features = ["derive"] }
+strum = "0.23.0"
+strum_macros = "0.23.1"
+serial_test = "0.5.1"
+color-eyre = "0.5"
+toml = "0.5.8"
+enum_dispatch = "0.3.7"
+structopt = "0.3"
+
+log = "0.4"
+fern = { version = "0.6", features = ["colored"] }
+chrono = "0.4"

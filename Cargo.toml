@@ -1,0 +1,6 @@
+[workspace]
+members = [
+    "ouverture-core",
+    "ouverture-ui",
+    "ouverture-cli"
+]

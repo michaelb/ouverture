@@ -1,0 +1,92 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  format:
+    name: Formatting check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+            toolchain: stable
+            components: rustfmt
+            override: true
+      - uses: mbrobbel/rustfmt-check@master
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+  build:
+    name : Build
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - uses: Swatinem/rust-cache@v1
+    - name: Build
+      run: cargo build --verbose --release
+
+  buildnightly:
+    name: Build on nightly toolchain
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install nightly toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          override: true
+      - uses: Swatinem/rust-cache@v1
+      - name: build
+        run: cargo build --release
+
+  unittest:
+    name: Unit tests #& integration tests
+    runs-on: ubuntu-20.04
+    steps:
+
+    - uses: actions/checkout@v2
+
+    - uses: Swatinem/rust-cache@v1
+    - name: Unit tests
+      run: cargo test
+
+    # - name: Integration tests
+    #   run: cargo test --test integration
+
+
+  coverage:
+    name: Code coverage
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Install Rust
+        run: rustup toolchain install nightly --component llvm-tools-preview
+
+      - name: Install cargo-llvm-cov
+        run: curl -LsSf https://github.com/taiki-e/cargo-llvm-cov/releases/latest/download/cargo-llvm-cov-x86_64-unknown-linux-gnu.tar.gz | tar xzf - -C ~/.cargo/bin
+
+      - uses: Swatinem/rust-cache@v1
+      - run: cargo llvm-cov clean --workspace
+      - name: Generate code coverage for unit test
+        run: cargo llvm-cov  --workspace --no-report
+      # - name: Generate code coverage for integration tests
+      #   run: cargo llvm-cov --lcov --no-report --test integration
+      - name: Aggregate reports
+        run: cargo llvm-cov --no-run --lcov --output-path lcov.info
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }} # not required for public repos
+          files: lcov.info
+          fail_ci_if_error: true
