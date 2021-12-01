@@ -1,5 +1,5 @@
-use iced::{container, pane_grid, radio,button, rule, scrollable, Background, Color};
 use super::Themable;
+use iced::{button, container, pane_grid, radio, rule, scrollable, Background, Color};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Light {}

@@ -1,4 +1,6 @@
-use iced::{button, pane_grid, Button, Container, Element, HorizontalAlignment, Length, Column, Text};
+use iced::{
+    button, pane_grid, Button, Column, Container, Element, HorizontalAlignment, Length, Text,
+};
 
 use super::Content;
 use crate::style;

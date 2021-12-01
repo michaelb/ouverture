@@ -1,14 +1,14 @@
-use std::path::{PathBuf,Path};
+use serde::Deserialize;
 use std::fs::File;
 use std::io::prelude::*;
-use serde::Deserialize;
+use std::path::{Path, PathBuf};
 use toml;
 
-use color_eyre::{Result, eyre::eyre};
+use color_eyre::{eyre::eyre, Result};
 
 #[derive(Deserialize, Debug)]
 pub struct Config {
-    library:Vec<PathBuf>,
+    library: Vec<PathBuf>,
 }
 
 impl Config {
@@ -22,11 +22,8 @@ impl Config {
     }
 }
 
-
 impl Default for Config {
     fn default() -> Config {
-        Config {
-            library: vec![],
-        }
+        Config { library: vec![] }
     }
 }

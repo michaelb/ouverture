@@ -272,13 +272,12 @@ impl Content for Editor {
                 Message::IntoMenu(pane),
                 self.theme,
             ))
-  .push(button(
+            .push(button(
                 into_controlbar,
                 "ControlBar",
                 Message::IntoControlBar(pane),
                 self.theme,
             ))
-
             .push(button(
                 split_vertically,
                 "|",

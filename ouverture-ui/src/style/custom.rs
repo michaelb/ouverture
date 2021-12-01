@@ -7,7 +7,7 @@ use super::Themable;
 
 #[derive(Debug, Clone, Copy)]
 pub struct Custom {
-    pub name : &'static str,
+    pub name: &'static str,
 
     pub background: Color,
     pub surface: Color,
@@ -79,7 +79,7 @@ impl Default for Custom {
             active,
             scrollbar,
             scroller,
-            hovered
+            hovered,
         }
     }
 }
@@ -96,18 +96,16 @@ pub struct Scrollable {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-pub struct Rule{
+pub struct Rule {
     theme: Custom,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-pub struct Container{
-
+pub struct Container {
     theme: Custom,
-
 }
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-pub struct Radio{
+pub struct Radio {
     theme: Custom,
 }
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -214,7 +212,11 @@ impl radio::StyleSheet for Radio {
 
     fn hovered(&self) -> radio::Style {
         radio::Style {
-            background: Color { a: 0.5, ..self.theme.surface }.into(),
+            background: Color {
+                a: 0.5,
+                ..self.theme.surface
+            }
+            .into(),
             ..self.active()
         }
     }
@@ -232,7 +234,10 @@ impl scrollable::StyleSheet for Scrollable {
             border_width: 0.0,
             border_color: Color::TRANSPARENT,
             scroller: scrollable::Scroller {
-                color: Color { a: 0.7, ..self.theme.scroller },
+                color: Color {
+                    a: 0.7,
+                    ..self.theme.scroller
+                },
                 border_radius: 2.0,
                 border_width: 0.0,
                 border_color: Color::TRANSPARENT,

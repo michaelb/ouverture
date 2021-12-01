@@ -8,7 +8,6 @@ use std::path::PathBuf;
 use std::time::Duration;
 use tokio::net::TcpListener;
 
-
 pub async fn test() -> Result<PgEmbed, Box<dyn Error>> {
     let app_dirs = AppDirs::new(Some("ouverture/postgres"), true).unwrap();
     std::fs::create_dir_all(&app_dirs.data_dir).unwrap();

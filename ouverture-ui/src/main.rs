@@ -38,18 +38,15 @@ pub enum Message {
     Next,
     Previous,
 
-
     //Menu messages
     Home,
     Library,
     Settings,
 
-
     // Editor messages
     IntoMenu(pane_grid::Pane),
     IntoControlBar(pane_grid::Pane),
-    IntoSearchBar(pane_grid::Pane)
-
+    IntoSearchBar(pane_grid::Pane),
 }
 
 impl Application for Ouverture {
