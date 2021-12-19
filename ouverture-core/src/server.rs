@@ -21,7 +21,6 @@ impl Server {
 
         let stop_flag = Arc::new(Mutex::new(false));
 
-
         loop {
             let local_stop_flag = stop_flag.clone();
             let local_address = address.to_string();
@@ -62,7 +61,7 @@ impl Server {
                             Command::Ping => info!("Ping received"),
                             Command::Restart => info!("Restart command received"),
                             Command::Stop => {
-                                if ! *local_stop_flag.lock().unwrap() {
+                                if !*local_stop_flag.lock().unwrap() {
                                     info!("Stop command received");
                                 }
                                 let mut flag = local_stop_flag.lock().unwrap();
@@ -89,7 +88,10 @@ impl Server {
             }
         }
     }
-    pub async fn send(message: &Command, address: &str) -> Result<(), Box<dyn Error + Send + Sync>> {
+    pub async fn send(
+        message: &Command,
+        address: &str,
+    ) -> Result<(), Box<dyn Error + Send + Sync>> {
         let encoded: Vec<u8> = message.prepare_query()?;
         let mut stream = TcpStream::connect(address).await?;
         stream.write_all(&encoded).await?;
