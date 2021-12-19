@@ -10,10 +10,8 @@ use log::{debug, error, info, trace, warn};
 use opt::Opt;
 use structopt::StructOpt;
 
-
 mod logger;
 use logger::{setup_logger, LogDestination::*};
-
 
 #[tokio::main]
 async fn main() -> Result<()> {

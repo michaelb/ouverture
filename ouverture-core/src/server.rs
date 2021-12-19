@@ -6,8 +6,8 @@ use strum_macros::{Display, EnumIter, EnumString};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::{TcpListener, TcpStream};
 
-use log::{debug, error, info, trace, warn};
 use crate::config::Config;
+use log::{debug, error, info, trace, warn};
 
 pub struct Server {
     config: Config,

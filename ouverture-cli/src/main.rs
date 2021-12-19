@@ -47,7 +47,6 @@ async fn main() -> Result<()> {
     let opt = Opt::from_args();
     check_unique_command(&opt)?;
 
-
     match launch_command(&opt).await {
         Ok(_) => Ok(()),
         Err(e) => Err(eyre!(e)),
