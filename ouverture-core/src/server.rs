@@ -6,36 +6,42 @@ use strum_macros::{Display, EnumIter, EnumString};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::{TcpListener, TcpStream};
 
-use log::{debug, error, info, trace, warn};
 use crate::config::Config;
+use log::{debug, error, info, trace, warn};
 
 pub struct Server {
     config: Config,
 }
 
 impl Server {
-    pub async fn start() -> Result<(), Box<dyn Error>> {
-        let listener = TcpListener::bind("127.0.0.1:8080").await?;
+    pub async fn start(address: &str) -> Result<(), Box<dyn Error>> {
+        trace!("Starting TCP server on {:?}", address);
+        let listener = TcpListener::bind(address).await?;
         trace!("Server bound to tcp port");
 
         let stop_flag = Arc::new(Mutex::new(false));
 
+
         loop {
             let local_stop_flag = stop_flag.clone();
+            let local_address = address.to_string();
             let (mut socket, _) = listener.accept().await?;
 
-            tokio::spawn(async move {
+            // scope, instead of tokio::spawn, because we want to process requests from different clients
+            // synchronously: all request should be short enough and that will allow us to ensure there is
+            // is less mutlithreading shenanigans
+            {
                 let mut buf = [0u8; 8];
 
                 // In a loop, read all the data from the socket
                 loop {
                     match socket.read(&mut buf).await {
                         // socket closed
-                        Ok(n) if n == 0 => return,
+                        Ok(n) if n == 0 => break,
                         Ok(n) => n,
                         Err(e) => {
                             error!("failed to read from socket; err = {:?}", e);
-                            return;
+                            break;
                         }
                     };
 
@@ -48,22 +54,22 @@ impl Server {
                     let decoded_command = bincode::deserialize::<Command>(&payload);
                     match decoded_command {
                         Ok(command) => match command {
-                            Command::Play(_) => info!("Play command received"),
+                            Command::Play(i) => info!("Play command received: {:?}", i),
                             Command::Pause => info!("Pause command received"),
                             Command::Toggle => info!("Toggle command received"),
                             Command::Next => info!("Next command received"),
                             Command::Previous => info!("Previous command received"),
-                            Command::Ping => info!("Ping command received"),
+                            Command::Ping => info!("Ping received"),
                             Command::Restart => info!("Restart command received"),
                             Command::Stop => {
+                                if ! *local_stop_flag.lock().unwrap() {
+                                    info!("Stop command received");
+                                }
                                 let mut flag = local_stop_flag.lock().unwrap();
-                                *flag = true
-                            }
+                                *flag = true;
 
-                            // Test commands
-                            Command::Heavy(v) => trace!("Heavy received, len = {}", v.len()),
-                            #[allow(unreachable_patterns)]
-                            _ => trace!("Unknown command"),
+                                break;
+                            }
                         },
                         Err(e) => warn!("failed to decode message payload; err = {:?}", e),
                     };
@@ -74,7 +80,7 @@ impl Server {
                     //     return;
                     // }
                 }
-            });
+            };
 
             // in case the Stop command was received, exit the loop.
             // The binded address is released at 'listener' drop
@@ -83,9 +89,9 @@ impl Server {
             }
         }
     }
-    pub async fn send(message: &Command) -> Result<(), Box<dyn Error + Send + Sync>> {
+    pub async fn send(message: &Command, address: &str) -> Result<(), Box<dyn Error + Send + Sync>> {
         let encoded: Vec<u8> = message.prepare_query()?;
-        let mut stream = TcpStream::connect("127.0.0.1:8080").await.unwrap();
+        let mut stream = TcpStream::connect(address).await?;
         stream.write_all(&encoded).await?;
         Ok(())
     }
@@ -105,9 +111,6 @@ pub enum Command {
     Ping,
     Restart,
     Stop,
-
-    // Test commands
-    Heavy(Vec<u8>),
 }
 
 impl Command {

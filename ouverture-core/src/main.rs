@@ -10,10 +10,8 @@ use log::{debug, error, info, trace, warn};
 use opt::Opt;
 use structopt::StructOpt;
 
-
 mod logger;
 use logger::{setup_logger, LogDestination::*};
-
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -32,7 +30,8 @@ async fn main() -> Result<()> {
     };
     info!("Config : {:?}", config);
 
-    let res = Server::start().await;
-    info!("server status: {:?}", res);
+    let address = "127.0.0.1:6603";
+    let res = Server::start(&address).await;
+    info!("Server exiting with status: {:?}", res);
     Ok(())
 }
