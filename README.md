@@ -34,6 +34,28 @@ Very much at Work-In-*Planning* stage now
  - [ ] Duplicate management
  - [ ] auto playlists (auto genre, artist and 'mood' - whatever it means - detection)
 
+## Roadmap
+
+ - [x] working GUI framework
+ - [ ] cli can communicate with server
+ - [ ] define Song & other structs (playlist..)
+ - [ ] unit test (target > 60%)
+ - [ ] use the database to store those values
+ - [ ] fix warnings & clean out / refactor
+ - [ ] statically link gstreamer (git submodule?) & play a sound
+ - [ ] play songs & interface (seek bar, crossfade)
+ - [ ] searchable library
+ - [ ] playlists, sort by...
+ - [ ] fix warnings & clean out / refactor
+ - [ ] unit test (target > 80%)
+ - [ ] fully themable GUI
+ - [ ] youtube-dl[p] integration
+ - [ ] beats/metadata service to fix metadata
+ - [ ] packaging (arch at least) & CI
+ - [ ] follow / sync semantics (private for now)
+ - [ ] music server
+ - [ ] public follow/sync (torrent?)
+
 
 ## Some tech I plan to use or take inspiration from
 

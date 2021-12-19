@@ -12,32 +12,32 @@ use structopt::StructOpt;
     about = "The command-line interface to the ouverture music player"
 )]
 struct Opt {
-    #[structopt(long)]
     /// Resume playing the current song, or play the specified file
+    #[structopt(long)]
     play: Option<Option<String>>,
 
-    #[structopt(long)]
     /// Pause the current song
+    #[structopt(long)]
     pause: bool,
 
-    #[structopt(long)]
     /// Toggle play/pause
+    #[structopt(long)]
     toggle: bool,
 
-    #[structopt(long)]
     ///Play the next song
+    #[structopt(long)]
     next: bool,
 
-    #[structopt(long)]
     ///Play the previous song
+    #[structopt(long)]
     previous: bool,
 
-    #[structopt(long)]
     ///Which ouverture server to communicate with
-    server: Option<Option<String>>,
-
     #[structopt(long)]
+    server: Option<String>,
+
     ///Ping the server
+    #[structopt(long)]
     ping: bool,
 }
 
@@ -47,7 +47,6 @@ async fn main() -> Result<()> {
     let opt = Opt::from_args();
     check_unique_command(&opt)?;
 
-    Server::start();
 
     match launch_command(&opt).await {
         Ok(_) => Ok(()),
@@ -99,5 +98,9 @@ async fn launch_command(opt: &Opt) -> Result<(), Box<dyn Error + Send + Sync>> {
     if opt.previous {
         Server::send(&Command::Previous).await?;
     }
+    if opt.ping {
+        Server::send(&Command::Ping).await?;
+    }
+
     Ok(())
 }

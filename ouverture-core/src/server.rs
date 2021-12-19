@@ -6,6 +6,7 @@ use strum_macros::{Display, EnumIter, EnumString};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::{TcpListener, TcpStream};
 
+use log::{debug, error, info, trace, warn};
 use crate::config::Config;
 
 pub struct Server {
@@ -15,6 +16,7 @@ pub struct Server {
 impl Server {
     pub async fn start() -> Result<(), Box<dyn Error>> {
         let listener = TcpListener::bind("127.0.0.1:8080").await?;
+        trace!("Server bound to tcp port");
 
         let stop_flag = Arc::new(Mutex::new(false));
 
@@ -32,7 +34,7 @@ impl Server {
                         Ok(n) if n == 0 => return,
                         Ok(n) => n,
                         Err(e) => {
-                            eprintln!("failed to read from socket; err = {:?}", e);
+                            error!("failed to read from socket; err = {:?}", e);
                             return;
                         }
                     };
@@ -41,31 +43,30 @@ impl Server {
 
                     let mut payload = vec![0; size as usize];
                     let res = socket.read_exact(&mut payload[..]).await;
-                    println!("res from socket = {:?}", res);
+                    trace!("res from socket = {:?}", res);
 
                     let decoded_command = bincode::deserialize::<Command>(&payload);
                     match decoded_command {
                         Ok(command) => match command {
-                            Command::Play(_) => println!("Play"),
-                            Command::Pause => println!("Pause"),
-                            Command::Toggle => println!("Toggle"),
-                            Command::Next => println!("Next"),
-                            Command::Previous => println!("Previous"),
-                            Command::Ping => println!("Ping"),
-                            Command::Restart => println!("Restart"),
+                            Command::Play(_) => info!("Play command received"),
+                            Command::Pause => info!("Pause command received"),
+                            Command::Toggle => info!("Toggle command received"),
+                            Command::Next => info!("Next command received"),
+                            Command::Previous => info!("Previous command received"),
+                            Command::Ping => info!("Ping command received"),
+                            Command::Restart => info!("Restart command received"),
                             Command::Stop => {
                                 let mut flag = local_stop_flag.lock().unwrap();
                                 *flag = true
                             }
 
                             // Test commands
-                            Command::Heavy(v) => println!("Heavy received, len = {}", v.len()),
+                            Command::Heavy(v) => trace!("Heavy received, len = {}", v.len()),
                             #[allow(unreachable_patterns)]
-                            _ => println!("Unknown command"),
+                            _ => trace!("Unknown command"),
                         },
-                        Err(e) => eprint!("failed to decode message payload; err = {:?}", e),
+                        Err(e) => warn!("failed to decode message payload; err = {:?}", e),
                     };
-                    println!("finished decoding comand");
 
                     // // Write the data back
                     // if let Err(e) = socket.write_all(&buf[0..n]).await {
