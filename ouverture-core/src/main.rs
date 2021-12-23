@@ -1,6 +1,7 @@
 mod config;
 mod opt;
 mod server;
+mod music;
 use crate::server::Server;
 use chrono;
 use color_eyre::eyre::eyre;

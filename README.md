@@ -37,11 +37,12 @@ Very much at Work-In-*Planning* stage now
 ## Roadmap
 
  - [x] working GUI framework
- - [ ] cli can communicate with server
- - [ ] define Song & other structs (playlist..)
- - [ ] unit test (target > 60%)
+ - [x] cli can communicate with server
+ - [x] define Song & other structs (playlist..)
  - [ ] use the database to store those values
+ - [ ] display songs in a UI window
  - [ ] fix warnings & clean out / refactor
+ - [ ] unit test (target > 60%)
  - [ ] statically link gstreamer (git submodule?) & play a sound
  - [ ] play songs & interface (seek bar, crossfade)
  - [ ] searchable library
