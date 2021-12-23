@@ -1,19 +1,19 @@
 mod config;
+mod music;
 mod opt;
 mod server;
-mod music;
 use crate::server::Server;
 use chrono;
 use color_eyre::eyre::eyre;
 use color_eyre::{eyre::Report, eyre::WrapErr, Result, Section};
 use fern::colors::{Color, ColoredLevelConfig};
+use log::LevelFilter::*;
 use log::{debug, error, info, trace, warn};
 use opt::Opt;
 use structopt::StructOpt;
-use log::LevelFilter::*;
 
-use ouverture_core::start;
 use ouverture_core::config::Config;
+use ouverture_core::start;
 
 mod logger;
 use logger::{setup_logger, LogDestination::*};
@@ -25,10 +25,12 @@ async fn main() -> Result<()> {
     let opts = Opt::from_args();
     let level = match opts.log_level.as_deref() {
         None => Info,
+        Some("trace") => Trace,
+        Some("debug") => Debug,
         Some("info") => Info,
         Some("warn") => Warn,
-        Some("trace") => Trace,
         Some("error") => Error,
+        Some("off") => Off,
         Some(_) => Info,
     };
 
@@ -44,6 +46,5 @@ async fn main() -> Result<()> {
     };
     info!("Config : {:?}", config);
 
-   start(config).await
-
-   }
+    start(config).await
+}

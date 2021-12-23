@@ -1,4 +1,4 @@
-uinse iced::{
+use iced::{
     executor, pane_grid, Align, Application, Clipboard, Column, Command, Container, Element,
     Length, Row, Settings, Text,
 };

@@ -4,8 +4,8 @@ use structopt::StructOpt;
 #[derive(Debug, StructOpt)]
 #[structopt(name = "ouverture", about = "A next-gen music player")]
 pub struct Opt {
-    /// Log level
-    #[structopt(long = "log-level")]
+    /// Log level filter, default to 'info'
+    #[structopt(long = "log-level", possible_values(&["trace", "debug", "info", "warn", "error", "off"]))]
     pub log_level: Option<String>,
 
     /// Log destination, stderr by default

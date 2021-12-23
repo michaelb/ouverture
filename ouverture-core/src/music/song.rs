@@ -1,6 +1,6 @@
+use chrono::prelude::*;
 use std::path::PathBuf;
 use std::time::Duration;
-use chrono::prelude::*;
 
 #[derive(Clone)]
 pub enum AudioFormat {
@@ -22,17 +22,14 @@ pub struct Song {
     /// Title of the song
     title: Option<String>,
 
-
     /// Where to fetch the music data
     source: Option<SongSource>,
-
 
     /// Duration of the song
     duration: Duration,
 
     /// Creation date
     added_date: DateTime<Local>,
-
 
     /// Play counter
     play_count: usize,
@@ -51,24 +48,21 @@ pub struct Song {
     format: AudioFormat,
 }
 
-
 #[derive(Clone)]
 pub enum SongSource {
     FilePath(PathBuf),
-    YoutubeUrl(String)
+    YoutubeUrl(String),
 }
 
 #[derive(Clone)]
 /// Rating in % points, 0 = worst, and 100 = best
 pub enum Rating {
-
     Auto(usize),
     Manual(usize),
 
     /// Synced from somewhere else (report count update there)
-    Sync(usize), 
+    Sync(usize),
 }
-
 
 impl Default for Rating {
     fn default() -> Self {
