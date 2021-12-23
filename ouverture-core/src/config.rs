@@ -8,7 +8,9 @@ use color_eyre::{eyre::eyre, Result};
 
 #[derive(Deserialize, Debug)]
 pub struct Config {
-    library: Vec<PathBuf>,
+    pub library: Vec<PathBuf>,
+    pub server_address: String,
+    pub server_port: String,
 }
 
 impl Config {
@@ -24,6 +26,10 @@ impl Config {
 
 impl Default for Config {
     fn default() -> Config {
-        Config { library: vec![] }
+        Config {
+            library: vec![],
+            server_address: "127.0.0.1".to_string(),
+            server_port: "6603".to_string(),
+        }
     }
 }

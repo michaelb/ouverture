@@ -10,6 +10,10 @@ use fern::colors::{Color, ColoredLevelConfig};
 use log::{debug, error, info, trace, warn};
 use opt::Opt;
 use structopt::StructOpt;
+use log::LevelFilter::*;
+
+use ouverture_core::start;
+use ouverture_core::config::Config;
 
 mod logger;
 use logger::{setup_logger, LogDestination::*};
@@ -19,20 +23,27 @@ async fn main() -> Result<()> {
     color_eyre::install()?;
 
     let opts = Opt::from_args();
+    let level = match opts.log_level.as_deref() {
+        None => Info,
+        Some("info") => Info,
+        Some("warn") => Warn,
+        Some("trace") => Trace,
+        Some("error") => Error,
+        Some(_) => Info,
+    };
+
     match opts.log_destination.clone() {
-        None => setup_logger(StdErr)?,
-        Some(path) => setup_logger(File(path))?,
+        None => setup_logger(StdErr, level)?,
+        Some(path) => setup_logger(File(path), level)?,
     };
     info!("Opts = {:?}", opts);
     // let config = config::Config::new_from_file(config_path).unwrap();
     let config = match opts.config {
-        None => config::Config::default(),
-        Some(path) => config::Config::new_from_file(&path)?,
+        None => Config::default(),
+        Some(path) => Config::new_from_file(&path)?,
     };
     info!("Config : {:?}", config);
 
-    let address = "127.0.0.1:6603";
-    let res = Server::start(&address).await;
-    info!("Server exiting with status: {:?}", res);
-    Ok(())
-}
+   start(config).await
+
+   }

@@ -5,6 +5,8 @@ use ouverture_core::server::{Command, Server};
 use std::error::Error;
 use std::path::Path;
 use structopt::StructOpt;
+use tokio::time::timeout;
+use std::time::Duration;
 
 #[derive(Debug, StructOpt)]
 #[structopt(
@@ -119,15 +121,18 @@ async fn launch_command(opt: &Opt) -> Result<(), Box<dyn Error + Send + Sync>> {
     if opt.ping {
         loop {
             let start = std::time::Instant::now();
-            let status = Server::send(&Command::Ping, &server_addr).await;
+            let status_with_timeout = timeout(Duration::from_secs(1),Server::send(&Command::Ping, &server_addr)).await;
             let duration = start.elapsed();
-            match status {
-                Ok(_) => println!(
-                    "Server at {} reachable, time={}ms",
-                    &server_addr,
-                    duration.as_millis()
-                ),
-                Err(e) => println!("Could not reach server at {}: {:?}", &server_addr, e),
+            match status_with_timeout {
+                Ok(status) => match status {
+                    Ok(_) => println!(
+                        "Server at {} reachable, time={}ms",
+                        &server_addr,
+                        duration.as_millis()
+                    ),
+                    Err(e) => println!("Could not reach server at {}: {:?}", &server_addr, e),
+                },
+                Err(_) => println!("Timeout trying to reach server at {}", &server_addr)
             }
             let sleep_for = std::time::Duration::from_secs(1);
             std::thread::sleep(sleep_for);

@@ -1,7 +1,7 @@
 use color_eyre::eyre::eyre;
 use color_eyre::{eyre::Report, eyre::WrapErr, Result, Section};
 use fern::colors::{Color, ColoredLevelConfig};
-use log::warn;
+use log::info;
 use std::path::{Path, PathBuf};
 #[derive(Debug)]
 pub enum LogDestination {
@@ -9,7 +9,7 @@ pub enum LogDestination {
     StdErr,
 }
 
-pub fn setup_logger(dest: LogDestination) -> Result<()> {
+pub fn setup_logger(dest: LogDestination, level: log::LevelFilter) -> Result<()> {
     let colors = ColoredLevelConfig::default();
     let res = match dest {
         LogDestination::File(path) => fern::Dispatch::new()
@@ -24,7 +24,7 @@ pub fn setup_logger(dest: LogDestination) -> Result<()> {
                     message = message,
                 ))
             })
-            .level(log::LevelFilter::Info)
+            .level(level)
             .chain(fern::log_file(path)?)
             .apply(),
         LogDestination::StdErr => fern::Dispatch::new()
@@ -39,11 +39,11 @@ pub fn setup_logger(dest: LogDestination) -> Result<()> {
                     message = message,
                 ))
             })
-            .level(log::LevelFilter::Info)
+            .level(level)
             .chain(std::io::stderr())
             .apply(),
     };
-    warn!("setup logging: {:?}", res);
+    info!("setup logging: {:?}", res);
     match res {
         Ok(_) => Ok(()),
         Err(_) => Err(eyre!(

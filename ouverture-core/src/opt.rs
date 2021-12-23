@@ -8,7 +8,7 @@ pub struct Opt {
     #[structopt(long = "log-level")]
     pub log_level: Option<String>,
 
-    /// Log destination
+    /// Log destination, stderr by default
     #[structopt(long = "log-destination")]
     pub log_destination: Option<PathBuf>,
 
