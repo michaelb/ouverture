@@ -122,8 +122,12 @@ async fn launch_command(opt: &Opt) -> Result<(), Box<dyn Error + Send + Sync>> {
             let status = Server::send(&Command::Ping, &server_addr).await;
             let duration = start.elapsed();
             match status {
-                Ok(_) => println!("Server at {} reachable, time={}ms", &server_addr, duration.as_millis()),
-                Err(e) => println!("Could not reach server at {}: {:?}",&server_addr, e),
+                Ok(_) => println!(
+                    "Server at {} reachable, time={}ms",
+                    &server_addr,
+                    duration.as_millis()
+                ),
+                Err(e) => println!("Could not reach server at {}: {:?}", &server_addr, e),
             }
             let sleep_for = std::time::Duration::from_secs(1);
             std::thread::sleep(sleep_for);
