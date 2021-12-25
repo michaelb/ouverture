@@ -42,7 +42,6 @@ pub async fn setup_db() -> Result<PgEmbed, Box<dyn Error>> {
 
     let mut pg = PgEmbed::new(pg_settings, fetch_settings).await?;
 
-
     // Download, unpack, create password file and database cluster
     pg.setup().await?;
 

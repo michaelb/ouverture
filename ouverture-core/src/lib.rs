@@ -2,9 +2,9 @@ pub mod config;
 pub mod database;
 pub mod server;
 
-use std::error::Error;
 use config::Config;
 use server::Server;
+use std::error::Error;
 
 use database::setup_db;
 
@@ -12,7 +12,7 @@ use color_eyre::eyre::eyre;
 use color_eyre::Result;
 use log::{error, info};
 
-pub async fn start(config: Config) -> Result<(), Box<dyn Error>>  {
+pub async fn start(config: Config) -> Result<(), Box<dyn Error>> {
     let address = config.server_address + ":" + &config.server_port;
     let mut pg = setup_db().await?;
     pg.start_db().await?;
@@ -27,5 +27,4 @@ pub async fn start(config: Config) -> Result<(), Box<dyn Error>>  {
     };
 
     server_exit_status
-
 }
