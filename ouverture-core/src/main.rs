@@ -2,7 +2,7 @@ mod config;
 mod music;
 mod opt;
 mod server;
-use crate::server::Server;
+use crate::server::{Command::Stop, Server};
 use chrono;
 use color_eyre::eyre::eyre;
 use color_eyre::{eyre::Report, eyre::WrapErr, Result, Section};
@@ -17,9 +17,13 @@ use ouverture_core::start;
 
 mod logger;
 use logger::{setup_logger, LogDestination::*};
+use futures::stream::StreamExt;
+use signal_hook::consts::signal::*;
+use signal_hook_tokio::Signals;
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    // Setup color_eyre manager
     color_eyre::install()?;
 
     let opts = Opt::from_args();
@@ -46,5 +50,39 @@ async fn main() -> Result<()> {
     };
     info!("Config : {:?}", config);
 
-    start(config).await
+    // Set up signal handlers
+    let address = config.server_address.clone() + ":" + &config.server_port.clone();
+    let signals = Signals::new(&[
+        SIGTERM,
+        SIGINT,
+        SIGQUIT,
+    ])?;
+    let handle = signals.handle();
+    let signals_task = tokio::spawn(handle_signals(signals, address));
+
+    // Start ouverture server
+    let res = start(config).await;
+
+    handle.close();
+    signals_task.await?;
+
+
+    match res {
+        Err(e) => Err(eyre!(format!("{:?}", e))),
+        Ok(_) => Ok(()),
+    }
+}
+
+async fn handle_signals(signals: Signals, address: String) {
+    let mut signals = signals.fuse();
+    while let Some(signal) = signals.next().await {
+        match signal {
+            SIGTERM | SIGINT | SIGQUIT => {
+                // Shutdown the system;
+                Server::send(&Stop, &address).await.unwrap();
+
+            },
+            _ => unreachable!(),
+        }
+    }
 }

@@ -45,6 +45,7 @@ Very much at Work-In-*Planning* stage now
  - [ ] unit test (target > 60%)
  - [ ] statically link gstreamer (git submodule?) & play a sound
  - [ ] play songs & interface (seek bar, crossfade)
+ - [ ] logo
  - [ ] searchable library
  - [ ] playlists, sort by...
  - [ ] fix warnings & clean out / refactor

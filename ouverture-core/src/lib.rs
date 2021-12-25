@@ -2,19 +2,30 @@ pub mod config;
 pub mod database;
 pub mod server;
 
+use std::error::Error;
 use config::Config;
 use server::Server;
 
+use database::setup_db;
+
 use color_eyre::eyre::eyre;
 use color_eyre::Result;
-use log::{debug, error, info, trace, warn};
+use log::{error, info};
 
-pub async fn start(config: Config) -> Result<()> {
+pub async fn start(config: Config) -> Result<(), Box<dyn Error>>  {
     let address = config.server_address + ":" + &config.server_port;
-    let res = Server::start(&address).await;
-    info!("Server exiting with status: {:?}", res);
+    let mut pg = setup_db().await?;
+    pg.start_db().await?;
+
+    let server_exit_status = Server::start(&address).await;
+
+    info!("stopping database");
+    let res = pg.stop_db().await;
     match res {
-        Err(e) => Err(eyre!(format!("{:?}", e))),
-        Ok(_) => Ok(()),
-    }
+        Err(e) => error!("failed to stop database {:?}", e),
+        _ => (),
+    };
+
+    server_exit_status
+
 }

@@ -8,6 +8,47 @@ use std::path::PathBuf;
 use std::time::Duration;
 use tokio::net::TcpListener;
 
+use log::info;
+
+pub async fn setup_db() -> Result<PgEmbed, Box<dyn Error>> {
+    let app_dirs = AppDirs::new(Some("ouverture/postgres"), true).unwrap();
+    std::fs::create_dir_all(&app_dirs.data_dir)?;
+    info!("created dir: {:?}", app_dirs);
+    let pg_settings = PgSettings {
+        // Where to store the postgresql database
+        database_dir: PathBuf::from(&app_dirs.data_dir),
+        port: 5432,
+        user: "postgres".to_string(),
+        password: "password".to_string(),
+
+        // authentication method
+        auth_method: PgAuthMethod::Plain,
+        // If persistent is false clean up files and directories on drop, otherwise keep them
+        persistent: true,
+        // duration to wait before terminating process execution
+        // pg_ctl start/stop and initdb timeout
+        // if set to None the process will not be terminated
+        timeout: Some(Duration::from_secs(15)),
+        // If migration sql scripts need to be run, the directory containing those scripts can be
+        // specified here with `Some(PathBuf(path_to_dir)), otherwise `None` to run no migrations.
+        // To enable migrations view the **Usage** section for details
+        migration_dir: None,
+    };
+
+    let fetch_settings = PgFetchSettings {
+        version: PG_V13,
+        ..Default::default()
+    };
+
+    let mut pg = PgEmbed::new(pg_settings, fetch_settings).await?;
+
+
+    // Download, unpack, create password file and database cluster
+    pg.setup().await?;
+
+    Ok(pg)
+}
+
 pub async fn test() -> Result<PgEmbed, Box<dyn Error>> {
     let app_dirs = AppDirs::new(Some("ouverture/postgres"), true).unwrap();
     std::fs::create_dir_all(&app_dirs.data_dir).unwrap();
