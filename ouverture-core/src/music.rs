@@ -1,2 +1,2 @@
-mod playlist;
-mod song;
+pub mod playlist;
+pub mod song;
