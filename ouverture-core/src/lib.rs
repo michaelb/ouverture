@@ -13,7 +13,7 @@ use color_eyre::eyre::eyre;
 use color_eyre::Result;
 use log::{error, info};
 
-pub async fn start(config: Config) -> Result<(), Box<dyn Error>>  {
+pub async fn start(config: Config) -> Result<(), Box<dyn Error>> {
     let address = config.server_address.clone() + ":" + &config.server_port.clone();
     let mut pg = setup_db(config.clone()).await?;
     start_db(&mut pg, config.clone()).await?;

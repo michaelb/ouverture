@@ -16,7 +16,6 @@ use log::{debug,info};
 use sea_orm::{entity::*, query::*};
 use sea_orm::entity::prelude::*;
 use sea_orm::{Database, DatabaseConnection};
-
 pub async fn setup_db(config: Config) -> Result<PgEmbed, Box<dyn Error>> {
     std::fs::create_dir_all(config.database_dir.clone())?;
     let pg_settings = PgSettings {

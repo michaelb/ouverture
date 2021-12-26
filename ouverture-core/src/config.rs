@@ -36,8 +36,10 @@ impl Default for Config {
             server_address: "127.0.0.1".to_string(),
             server_port: "6603".to_string(),
 
-            database_dir: AppDirs::new(Some("ouverture/postgres"), true).unwrap().data_dir,
-            database_port : "6604".to_string(),
+            database_dir: AppDirs::new(Some("ouverture/postgres"), true)
+                .unwrap()
+                .data_dir,
+            database_port: "6604".to_string(),
         }
     }
 }
