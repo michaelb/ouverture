@@ -83,3 +83,8 @@ Very much at Work-In-*Planning* stage now
 - [dameonizer](https://github.com/knsd/daemonize)
 - [uds on windows](https://crates.io/crates/uds_windows)
 - [dim](https://github.com/Dusk-Labs/dim)
+
+
+## Dependencies
+
+ - postgresql (for libpq, as build dep?)

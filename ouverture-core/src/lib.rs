@@ -6,16 +6,16 @@ use std::error::Error;
 use config::Config;
 use server::Server;
 
-use database::setup_db;
+use database::{setup_db, start_db};
 
 use color_eyre::eyre::eyre;
 use color_eyre::Result;
 use log::{error, info};
 
 pub async fn start(config: Config) -> Result<(), Box<dyn Error>>  {
-    let address = config.server_address + ":" + &config.server_port;
-    let mut pg = setup_db().await?;
-    pg.start_db().await?;
+    let address = config.server_address.clone() + ":" + &config.server_port.clone();
+    let mut pg = setup_db(config.clone()).await?;
+    start_db(&mut pg, config).await?;
 
     let server_exit_status = Server::start(&address).await;
 
