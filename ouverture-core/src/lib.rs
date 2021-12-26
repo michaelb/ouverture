@@ -2,9 +2,9 @@ pub mod config;
 pub mod database;
 pub mod server;
 
-use std::error::Error;
 use config::Config;
 use server::Server;
+use std::error::Error;
 
 use database::{setup_db, start_db};
 
@@ -27,5 +27,4 @@ pub async fn start(config: Config) -> Result<(), Box<dyn Error>>  {
     };
 
     server_exit_status
-
 }
