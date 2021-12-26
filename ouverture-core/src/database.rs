@@ -11,8 +11,8 @@ use tokio::net::TcpListener;
 use crate::config::Config;
 use log::info;
 
-use diesel::prelude::*;
 use diesel::pg::PgConnection;
+use diesel::prelude::*;
 
 pub async fn setup_db(config: Config) -> Result<PgEmbed, Box<dyn Error>> {
     std::fs::create_dir_all(config.database_dir.clone())?;
@@ -47,28 +47,27 @@ pub async fn setup_db(config: Config) -> Result<PgEmbed, Box<dyn Error>> {
     // Download, unpack, create password file and database cluster
     pg.setup().await?;
 
-   
     Ok(pg)
 }
 
-pub async fn start_db(pg: &mut PgEmbed, config:Config) ->  Result<(), Box<dyn Error>>  {
-
+pub async fn start_db(pg: &mut PgEmbed, config: Config) -> Result<(), Box<dyn Error>> {
     pg.start_db().await?;
 
-     // First time setup
+    // First time setup
     if !pg.database_exists("ouverture").await? {
         pg.create_database("ouverture").await?;
         info!("empty database created");
 
-        let database_url = "postgres://ouverture:ouverture@localhost:".to_string() + &config.database_port + "/ouverture";
+        let database_url = "postgres://ouverture:ouverture@localhost:".to_string()
+            + &config.database_port
+            + "/ouverture";
 
-        PgConnection::establish(&database_url).expect(&format!("Error connecting to {}", database_url));
-
+        PgConnection::establish(&database_url)
+            .expect(&format!("Error connecting to {}", database_url));
     }
 
     Ok(())
 }
-
 
 pub async fn test() -> Result<PgEmbed, Box<dyn Error>> {
     let app_dirs = AppDirs::new(Some("ouverture/postgres"), true).unwrap();
