@@ -1,7 +1,7 @@
 pub mod config;
 pub mod database;
-pub mod server;
 pub mod music;
+pub mod server;
 
 use config::Config;
 use server::Server;

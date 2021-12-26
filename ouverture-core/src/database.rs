@@ -11,10 +11,10 @@ use std::time::Duration;
 use tokio::net::TcpListener;
 
 use crate::config::Config;
-use log::{debug,info};
+use log::{debug, info};
 
-use sea_orm::{entity::*, query::*};
 use sea_orm::entity::prelude::*;
+use sea_orm::{entity::*, query::*};
 use sea_orm::{Database, DatabaseConnection};
 pub async fn setup_db(config: Config) -> Result<PgEmbed, Box<dyn Error>> {
     std::fs::create_dir_all(config.database_dir.clone())?;
@@ -74,19 +74,17 @@ pub async fn start_db(pg: &mut PgEmbed, config: Config) -> Result<(), Box<dyn Er
 pub async fn test_db(config: Config) {
     let database_url = "postgres://ouverture:ouverture@localhost:".to_string()
         + &config.database_port
-        + "/ouverture"; 
+        + "/ouverture";
     debug!("test DB connection established");
     let db = Database::connect(&database_url).await.unwrap();
     let test_song = setup::ActiveModel {
         title: Set("test title".to_owned()),
         ..Default::default()
-        };
+    };
 
     let res: setup::ActiveModel = test_song.insert(&db).await.unwrap();
     debug!("insert result : {:?}", res);
 
     // let song_found: Option<setup::Model> = setup::Entity::find().filter(setup::Entity::Column::Title.contains("test title")).one(&db).await.unwrap();
     // info!("song found: {:?}", song_found);
-
-
 }
