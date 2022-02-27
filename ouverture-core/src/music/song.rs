@@ -1,8 +1,11 @@
-use chrono::prelude::*;
-use std::path::PathBuf;
+use chrono::prelude::{DateTime, Local};
+use std::error::Error;
+use std::path::{Path, PathBuf};
 use std::time::Duration;
 
-#[derive(Clone)]
+use sea_orm::prelude::*;
+
+#[derive(Clone, Debug)]
 pub enum AudioFormat {
     mp3,
     wav,
@@ -13,32 +16,32 @@ pub enum AudioFormat {
     unsupported,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Song {
     /// Artist of the song
-    artist: Option<String>,
+    pub artist: Option<String>,
     /// Album of the song
-    album: Option<String>,
+    pub album: Option<String>,
     /// Title of the song
-    title: Option<String>,
+    pub title: Option<String>,
 
     /// Where to fetch the music data
-    source: Option<SongSource>,
+    pub source: Option<SongSource>,
 
     /// Duration of the song
-    duration: Duration,
+    pub duration: Duration,
 
     /// Creation date
-    added_date: DateTime<Local>,
+    pub added_date: DateTime<Local>,
 
     /// Play counter
-    play_count: usize,
+    pub play_count: usize,
 
     /// Skip count
-    skip_count: usize,
+    pub skip_count: usize,
 
     /// Rating
-    rating: Rating,
+    pub rating: Rating,
 
     // / uslt lyrics
     // lyric_frames: Vec<Lyrics>,
@@ -48,13 +51,23 @@ pub struct Song {
     format: AudioFormat,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum SongSource {
     FilePath(PathBuf),
     YoutubeUrl(String),
 }
 
-#[derive(Clone)]
+use SongSource::*;
+impl Into<String> for SongSource {
+    fn into(self) -> String {
+        match self {
+            FilePath(path) => String::from("file:") + path.to_str().unwrap(),
+            YoutubeUrl(url) => String::from("yt_url:") + &url,
+        }
+    }
+}
+
+#[derive(Clone, Debug)]
 /// Rating in % points, 0 = worst, and 100 = best
 pub enum Rating {
     Auto(usize),
@@ -84,5 +97,11 @@ impl Default for Song {
             rating: Rating::default(),
             format: AudioFormat::unsupported,
         }
+    }
+}
+
+impl Song {
+    pub fn from_path(path: &Path) -> Song {
+        Song::default()
     }
 }

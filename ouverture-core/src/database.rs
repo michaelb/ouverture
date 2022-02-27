@@ -11,11 +11,13 @@ use std::time::Duration;
 use tokio::net::TcpListener;
 
 use crate::config::Config;
-use log::{debug,info};
+use crate::music::song::*;
+use log::{debug, info};
 
-use sea_orm::{entity::*, query::*};
 use sea_orm::entity::prelude::*;
+use sea_orm::{entity::*, query::*};
 use sea_orm::{Database, DatabaseConnection};
+
 pub async fn setup_db(config: Config) -> Result<PgEmbed, Box<dyn Error>> {
     std::fs::create_dir_all(config.database_dir.clone())?;
     let pg_settings = PgSettings {
@@ -28,7 +30,7 @@ pub async fn setup_db(config: Config) -> Result<PgEmbed, Box<dyn Error>> {
         // authentication method
         auth_method: PgAuthMethod::Plain,
         // If persistent is false clean up files and directories on drop, otherwise keep them
-        persistent: true,
+        persistent: false,
         // duration to wait before terminating process execution
         // pg_ctl start/stop and initdb timeout
         // if set to None the process will not be terminated
@@ -71,22 +73,31 @@ pub async fn start_db(pg: &mut PgEmbed, config: Config) -> Result<(), Box<dyn Er
     Ok(())
 }
 
+pub async fn add_db(config: Config, song: Song) -> Result<(), Box<dyn Error>> {
+    let database_url = "postgres://ouverture:ouverture@localhost:".to_string()
+        + &config.database_port
+        + "/ouverture";
+    let db = Database::connect(&database_url).await.unwrap();
+    debug!("Adding song {song:?}");
+    setup::ActiveModel::from(song).insert(&db).await?;
+    debug!("Success!");
+    Ok(())
+}
+
 pub async fn test_db(config: Config) {
     let database_url = "postgres://ouverture:ouverture@localhost:".to_string()
         + &config.database_port
-        + "/ouverture"; 
+        + "/ouverture";
     debug!("test DB connection established");
     let db = Database::connect(&database_url).await.unwrap();
     let test_song = setup::ActiveModel {
-        title: Set("test title".to_owned()),
+        title: Set(Some("test title".to_owned())),
         ..Default::default()
-        };
+    };
 
-    let res: setup::ActiveModel = test_song.insert(&db).await.unwrap();
+    let res = test_song.insert(&db).await.unwrap();
     debug!("insert result : {:?}", res);
 
-    // let song_found: Option<setup::Model> = setup::Entity::find().filter(setup::Entity::Column::Title.contains("test title")).one(&db).await.unwrap();
-    // info!("song found: {:?}", song_found);
-
-
+    let song_found: Option<setup::Model> = setup::Entity::find_by_id(1).one(&db).await.unwrap();
+    debug!("song found: {:?}", song_found);
 }

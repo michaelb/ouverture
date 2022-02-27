@@ -2,24 +2,28 @@ pub mod config;
 pub mod database;
 pub mod server;
 pub mod music;
+pub mod library;
 
 use config::Config;
 use server::Server;
-use std::error::Error;
+use std::{error::Error, path::Path};
 
 use database::*;
 
 use color_eyre::eyre::eyre;
 use color_eyre::Result;
-use log::{error, info};
+use log::{error, info, debug};
 
 pub async fn start(config: Config) -> Result<(), Box<dyn Error>> {
+    debug!("Ouverture server started");
     let address = config.server_address.clone() + ":" + &config.server_port.clone();
     let mut pg = setup_db(config.clone()).await?;
     start_db(&mut pg, config.clone()).await?;
-    test_db(config).await;
+    // test_db(config).await;
 
     let server_exit_status = Server::start(&address).await;
+
+    library::scan(&config.library[0]);
 
     info!("stopping database");
     let res = pg.stop_db().await;
@@ -28,5 +32,6 @@ pub async fn start(config: Config) -> Result<(), Box<dyn Error>> {
         _ => (),
     };
 
+    debug!("Ouverture server stopped");
     server_exit_status
 }

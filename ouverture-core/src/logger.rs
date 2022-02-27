@@ -10,7 +10,7 @@ pub enum LogDestination {
 }
 
 pub fn setup_logger(dest: LogDestination, level: log::LevelFilter) -> Result<()> {
-    let colors = ColoredLevelConfig::default();
+    let colors = ColoredLevelConfig::default().debug(Color::Magenta);
     let res = match dest {
         LogDestination::File(path) => fern::Dispatch::new()
             .format(move |out, message, record| {
