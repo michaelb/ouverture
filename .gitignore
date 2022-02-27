@@ -12,3 +12,5 @@ Cargo.lock
 db
 
 .githooks/*
+
+local/*
