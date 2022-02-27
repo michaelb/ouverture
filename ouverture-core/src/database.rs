@@ -1,4 +1,5 @@
-    mod setup;
+
+mod setup;
 
 use pg_embed::pg_enums::PgAuthMethod;
 use pg_embed::pg_errors::PgEmbedError;
@@ -100,5 +101,4 @@ pub async fn test_db(config: Config) {
 
     let song_found: Option<setup::Model> = setup::Entity::find_by_id(1).one(&db).await.unwrap();
     debug!("song found: {:?}", song_found);
-
 }

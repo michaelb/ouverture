@@ -1,7 +1,7 @@
 pub mod config;
 pub mod database;
-pub mod music;
 pub mod library;
+pub mod music;
 pub mod server;
 
 use config::Config;
@@ -12,7 +12,7 @@ use database::*;
 
 use color_eyre::eyre::eyre;
 use color_eyre::Result;
-use log::{error, info, debug};
+use log::{debug, error, info};
 
 pub async fn start(config: Config) -> Result<(), Box<dyn Error>> {
     debug!("Ouverture server started");
