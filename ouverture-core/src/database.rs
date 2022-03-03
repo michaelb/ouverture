@@ -24,14 +24,14 @@ pub async fn setup_db(config: Config) -> Result<PgEmbed, Box<dyn Error>> {
     let pg_settings = PgSettings {
         // Where to store the postgresql database
         database_dir: PathBuf::from(config.database_dir),
-        port: config.database_port.parse().unwrap(),
+        port: config.database_port as i16,
         user: "ouverture".to_string(),
         password: "ouverture".to_string(),
 
         // authentication method
         auth_method: PgAuthMethod::Plain,
         // If persistent is false clean up files and directories on drop, otherwise keep them
-        persistent: false,
+        persistent: true,
         // duration to wait before terminating process execution
         // pg_ctl start/stop and initdb timeout
         // if set to None the process will not be terminated
@@ -64,7 +64,7 @@ pub async fn start_db(pg: &mut PgEmbed, config: Config) -> Result<(), Box<dyn Er
         info!("empty database created");
 
         let database_url = "postgres://ouverture:ouverture@localhost:".to_string()
-            + &config.database_port
+            + &config.database_port.to_string()
             + "/ouverture";
 
         let conn = Database::connect(&database_url).await?;
@@ -76,7 +76,7 @@ pub async fn start_db(pg: &mut PgEmbed, config: Config) -> Result<(), Box<dyn Er
 
 pub async fn add_db(config: Config, song: Song) -> Result<(), Box<dyn Error>> {
     let database_url = "postgres://ouverture:ouverture@localhost:".to_string()
-        + &config.database_port
+        + &config.database_port.to_string()
         + "/ouverture";
     let db = Database::connect(&database_url).await.unwrap();
     debug!("Adding song {song:?}");
@@ -87,7 +87,7 @@ pub async fn add_db(config: Config, song: Song) -> Result<(), Box<dyn Error>> {
 
 pub async fn test_db(config: Config) {
     let database_url = "postgres://ouverture:ouverture@localhost:".to_string()
-        + &config.database_port
+        + &config.database_port.to_string()
         + "/ouverture";
     debug!("test DB connection established");
     let db = Database::connect(&database_url).await.unwrap();

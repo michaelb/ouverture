@@ -16,7 +16,7 @@ use log::{debug, error, info};
 
 pub async fn start(config: Config) -> Result<(), Box<dyn Error>> {
     debug!("Ouverture server started");
-    let address = config.server_address.clone() + ":" + &config.server_port.clone();
+    let address = config.server_address.clone() + ":" + &config.server_port.to_string();
     let mut pg = setup_db(config.clone()).await?;
     start_db(&mut pg, config.clone()).await?;
     // test_db(config).await;

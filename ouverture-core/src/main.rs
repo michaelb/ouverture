@@ -50,7 +50,7 @@ async fn main() -> Result<()> {
 
     // Set up signal handlers
     let first_signal = Arc::new(Mutex::new(true));
-    let address = config.server_address.clone() + ":" + &config.server_port.clone();
+    let address = config.server_address.clone() + ":" + &config.server_port.to_string();
     let signals = Signals::new(&[SIGTERM, SIGINT, SIGQUIT])?;
     let handle = signals.handle();
     let signals_task = tokio::spawn(handle_signals(signals, address, first_signal.clone()));
