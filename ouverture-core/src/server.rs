@@ -9,15 +9,12 @@ use tokio::net::{TcpListener, TcpStream};
 use crate::config::Config;
 use crate::library::scan;
 
-
 use log::{debug, error, info, trace, warn};
 
-
-pub struct Server {
-}
+pub struct Server {}
 
 impl Server {
-    pub async fn start(config : &Config) -> Result<(), Box<dyn Error>> {
+    pub async fn start(config: &Config) -> Result<(), Box<dyn Error>> {
         let address = config.server_address.clone() + ":" + &config.server_port.to_string();
         trace!("Starting TCP server on {:?}", &address);
         let listener = TcpListener::bind(&address).await?;

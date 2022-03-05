@@ -22,7 +22,6 @@ pub async fn start(config: Config) -> Result<(), Box<dyn Error>> {
 
     let server_exit_status = Server::start(&config).await;
 
-
     debug!("stopping database");
     let res = pg.stop_db().await;
     match res {

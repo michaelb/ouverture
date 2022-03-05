@@ -1,9 +1,9 @@
 mod config;
+mod library;
 mod logger;
 mod music;
 mod opt;
 mod server;
-mod library;
 
 use crate::server::{Command::Stop, Server};
 use color_eyre::eyre::eyre;
