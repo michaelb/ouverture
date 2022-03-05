@@ -39,7 +39,7 @@ impl Default for Config {
             database_dir: AppDirs::new(Some("ouverture/postgres"), true)
                 .unwrap()
                 .data_dir,
-            database_port: 6604
+            database_port: 6604,
         }
     }
 }

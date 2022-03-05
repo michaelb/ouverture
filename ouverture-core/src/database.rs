@@ -1,4 +1,3 @@
-
 mod setup;
 
 use pg_embed::pg_enums::PgAuthMethod;
