@@ -26,4 +26,17 @@ Then, make some modification, push them to your fork and submit a pull request f
 
 
 
+## Logging behavior
+
+By ascending order of importance:
+
+trace, debug, info, warn, error
+
+We'll use log level as follows:
+
+- trace: spammy information from ouverture
+- debug: Basic information, useful for debug 
+- info: Notable info about Ouverture, silencing 'info' log level from dependencies
+- warn: Recoverable failures
+- err: irrecoverable failures
 

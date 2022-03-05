@@ -34,6 +34,14 @@ struct Opt {
     #[structopt(long)]
     previous: bool,
 
+    /// Scan the library
+    #[structopt(long)]
+    scan: bool,
+
+    /// List the songs (matching an optionnal criteria)
+    #[structopt(long)]
+    list: Option<Option<String>>,
+
     ///Stop the server
     #[structopt(long)]
     stop: bool,
@@ -66,25 +74,22 @@ async fn main() -> Result<()> {
 /// Checks if only one argument was given as argument
 /// Otherwise, the user won't probably understand what's happening
 fn check_unique_command(opt: &Opt) -> Result<()> {
-    let mut command_count = 0;
-    if opt.play.is_some() {
-        command_count += 1
-    }
-    if opt.pause {
-        command_count += 1
-    }
-    if opt.toggle {
-        command_count += 1
-    }
-    if opt.next {
-        command_count += 1
-    }
-    if opt.previous {
-        command_count += 1
-    }
+    let command_count = [
+        opt.play.is_some(),
+        opt.pause,
+        opt.toggle,
+        opt.next,
+        opt.previous,
+        opt.ping,
+        opt.list.is_some(),
+        opt.scan,
+    ]
+    .into_iter()
+    .filter(|b| *b)
+    .count();
     if command_count > 1 {
         return Err(Report::msg("More than one command provided!").suggestion(
-            "Provide only one of --play, --pause, ,--toggle, --next or --previous as argument",
+            "Provide only one of --play, --pause, --ping, --scan, --list ,--toggle, --next or --previous as argument",
         ));
     }
     Ok(())
@@ -118,6 +123,13 @@ async fn launch_command(opt: &Opt) -> Result<(), Box<dyn Error + Send + Sync>> {
     if opt.previous {
         Server::send(&Command::Previous, &server_addr).await?;
     }
+    if opt.scan {
+        Server::send(&Command::Scan, &server_addr).await?;
+    }
+    if let Some(optionnal_str) = opt.list.as_ref() {
+        Server::send(&Command::List(optionnal_str.clone()), &server_addr).await?;
+    }
+
     if opt.ping {
         loop {
             let start = std::time::Instant::now();

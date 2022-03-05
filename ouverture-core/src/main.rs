@@ -3,13 +3,14 @@ mod logger;
 mod music;
 mod opt;
 mod server;
+mod library;
 
 use crate::server::{Command::Stop, Server};
 use color_eyre::eyre::eyre;
 use color_eyre::Result;
 use futures::stream::StreamExt;
 use log::LevelFilter::*;
-use log::{info, warn};
+use log::{debug, warn};
 use logger::{setup_logger, LogDestination::*};
 use opt::Opt;
 use ouverture_core::config::Config;
@@ -33,20 +34,20 @@ async fn main() -> Result<()> {
         Some("warn") => Warn,
         Some("error") => Error,
         Some("off") => Off,
-        Some(_) => Info,
+        Some(_) => Info, // unreachable because of the arg parser
     };
 
     match opts.log_destination.clone() {
         None => setup_logger(StdErr, level)?,
         Some(path) => setup_logger(File(path), level)?,
     };
-    info!("Opts = {:?}", opts);
+    debug!("Opts = {:?}", opts);
     // let config = config::Config::new_from_file(config_path).unwrap();
     let config = match opts.config {
         None => Config::default(),
         Some(path) => Config::new_from_file(&path)?,
     };
-    info!("Config : {:?}", config);
+    debug!("Config : {:?}", config);
 
     // Set up signal handlers
     let first_signal = Arc::new(Mutex::new(true));

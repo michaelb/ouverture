@@ -7,23 +7,26 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::{TcpListener, TcpStream};
 
 use crate::config::Config;
+use crate::library::scan;
+
+
 use log::{debug, error, info, trace, warn};
 
+
 pub struct Server {
-    config: Config,
 }
 
 impl Server {
-    pub async fn start(address: &str) -> Result<(), Box<dyn Error>> {
-        trace!("Starting TCP server on {:?}", address);
-        let listener = TcpListener::bind(address).await?;
+    pub async fn start(config : &Config) -> Result<(), Box<dyn Error>> {
+        let address = config.server_address.clone() + ":" + &config.server_port.to_string();
+        trace!("Starting TCP server on {:?}", &address);
+        let listener = TcpListener::bind(&address).await?;
         trace!("Server bound to tcp port");
 
         let stop_flag = Arc::new(Mutex::new(false));
 
         loop {
             let local_stop_flag = stop_flag.clone();
-            let local_address = address.to_string();
             let (mut socket, _) = listener.accept().await?;
 
             // scope, instead of tokio::spawn, because we want to process requests from different clients
@@ -52,24 +55,27 @@ impl Server {
 
                     let decoded_command = bincode::deserialize::<Command>(&payload);
                     match decoded_command {
-                        Ok(command) => match command {
-                            Command::Play(i) => info!("Play command received: {:?}", i),
-                            Command::Pause => info!("Pause command received"),
-                            Command::Toggle => info!("Toggle command received"),
-                            Command::Next => info!("Next command received"),
-                            Command::Previous => info!("Previous command received"),
-                            Command::Ping => info!("Ping received"),
-                            Command::Restart => info!("Restart command received"),
-                            Command::Stop => {
-                                if !*local_stop_flag.lock().unwrap() {
-                                    info!("Stop command received");
-                                }
-                                let mut flag = local_stop_flag.lock().unwrap();
-                                *flag = true;
+                        Ok(command) => {
+                            info!("{c} command received", c = command);
+                            match command {
+                                Command::Play(i) => (),
+                                Command::Pause => (),
+                                Command::Toggle => (),
+                                Command::Next => (),
+                                Command::Previous => (),
 
-                                break;
+                                Command::Scan => scan(&config),
+                                Command::List(i) => (),
+
+                                Command::Ping => (),
+                                Command::Restart => (),
+                                Command::Stop => {
+                                    let mut flag = local_stop_flag.lock().unwrap();
+                                    *flag = true;
+                                    break;
+                                }
                             }
-                        },
+                        }
                         Err(e) => warn!("failed to decode message payload; err = {:?}", e),
                     };
 
@@ -109,6 +115,10 @@ pub enum Command {
     Next,
     Previous,
 
+    // "Library" commands
+    Scan,
+    List(Option<String>),
+
     // "Server" commands
     Ping,
     Restart,
@@ -117,7 +127,6 @@ pub enum Command {
 
 impl Command {
     fn prepare_query(&self) -> Result<Vec<u8>, Box<dyn Error + Send + Sync>> {
-        let content = self.to_string();
         // create a 8-bytes prefix: the length of the whole (prefix+message)
         match bincode::serialized_size(self) {
             Ok(size) => {
