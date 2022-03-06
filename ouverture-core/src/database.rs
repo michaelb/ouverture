@@ -73,14 +73,14 @@ pub async fn start_db(pg: &mut PgEmbed, config: Config) -> Result<(), Box<dyn Er
     Ok(())
 }
 
-pub async fn add_db(config: Config, song: Song) -> Result<(), Box<dyn Error>> {
+pub async fn add_db(config: &Config, song: Song) -> Result<(), Box<dyn Error>> {
     let database_url = "postgres://ouverture:ouverture@localhost:".to_string()
         + &config.database_port.to_string()
         + "/ouverture";
     let db = Database::connect(&database_url).await.unwrap();
     debug!("Adding song {song:?}");
     setup::ActiveModel::from(song).insert(&db).await?;
-    debug!("Success!");
+    debug!("Song added to db successfully!");
     Ok(())
 }
 

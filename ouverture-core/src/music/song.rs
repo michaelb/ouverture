@@ -102,6 +102,9 @@ impl Default for Song {
 
 impl Song {
     pub fn from_path(path: &Path) -> Song {
-        Song::default()
+        Song {
+            source: Some(FilePath(path.to_path_buf())),
+            ..Default::default()
+        }
     }
 }

@@ -7,7 +7,7 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::{TcpListener, TcpStream};
 
 use crate::config::Config;
-use crate::library::scan;
+use crate::library::*;
 
 use log::{debug, error, info, trace, warn};
 
@@ -61,8 +61,8 @@ impl Server {
                                 Command::Next => (),
                                 Command::Previous => (),
 
-                                Command::Scan => scan(&config),
-                                Command::List(i) => (),
+                                Command::Scan => scan(&config).await,
+                                Command::List(i) => list(&config, i).await,
 
                                 Command::Ping => (),
                                 Command::Restart => (),
