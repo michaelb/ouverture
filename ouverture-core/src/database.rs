@@ -1,4 +1,4 @@
-mod setup;
+pub mod setup;
 
 use pg_embed::pg_enums::PgAuthMethod;
 use pg_embed::pg_errors::PgEmbedError;
@@ -88,8 +88,8 @@ pub async fn test_db(config: Config) {
     let database_url = "postgres://ouverture:ouverture@localhost:".to_string()
         + &config.database_port.to_string()
         + "/ouverture";
-    debug!("test DB connection established");
     let db = Database::connect(&database_url).await.unwrap();
+    debug!("test DB connection established");
     let test_song = setup::ActiveModel {
         title: Set(Some("test title".to_owned())),
         ..Default::default()

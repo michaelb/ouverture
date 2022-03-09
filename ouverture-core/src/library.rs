@@ -7,6 +7,12 @@ use std::path::Path;
 
 use crate::database::add_db;
 
+use sea_orm::entity::prelude::*;
+use sea_orm::{entity::*, query::*};
+use sea_orm::{Database, DatabaseConnection};
+
+use crate::database::*;
+
 pub async fn scan(config: &Config) {
     for path_to_dir in &config.library {
         let mut entries = WalkDir::new(path_to_dir);
@@ -28,4 +34,13 @@ pub async fn scan(config: &Config) {
     }
 }
 
-pub async fn list(config: &Config, query: Option<String>) {}
+pub async fn list(config: &Config, query: Option<String>) {
+    let database_url = "postgres://ouverture:ouverture@localhost:".to_string()
+        + &config.database_port.to_string()
+        + "/ouverture";
+    let db = Database::connect(&database_url).await.unwrap();
+
+    let song_found: Vec<setup::Model> = setup::Entity::find().all(&db).await.unwrap();
+
+    println!("{song_found:?}");
+}
