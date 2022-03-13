@@ -1,11 +1,12 @@
 use chrono::prelude::{DateTime, Local};
+use serde::{Deserialize, Serialize};
 use std::error::Error;
 use std::path::{Path, PathBuf};
 use std::time::Duration;
 
 use sea_orm::prelude::*;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum AudioFormat {
     mp3,
     wav,
@@ -16,7 +17,7 @@ pub enum AudioFormat {
     unsupported,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Song {
     /// Artist of the song
     pub artist: Option<String>,
@@ -48,10 +49,10 @@ pub struct Song {
     // lyric_selected_index: usize,
     // parsed_lyric: Option<Lyric>,
     // picture: Option<Picture>,
-    format: AudioFormat,
+    pub format: AudioFormat,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum SongSource {
     FilePath(PathBuf),
     YoutubeUrl(String),
@@ -67,7 +68,7 @@ impl Into<String> for SongSource {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 /// Rating in % points, 0 = worst, and 100 = best
 pub enum Rating {
     Auto(usize),

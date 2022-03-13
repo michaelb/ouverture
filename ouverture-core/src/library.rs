@@ -34,13 +34,15 @@ pub async fn scan(config: &Config) {
     }
 }
 
-pub async fn list(config: &Config, query: Option<String>) {
+pub async fn list(config: &Config, query: Option<String>) -> Vec<Song> {
     let database_url = "postgres://ouverture:ouverture@localhost:".to_string()
         + &config.database_port.to_string()
         + "/ouverture";
     let db = Database::connect(&database_url).await.unwrap();
 
     let song_found: Vec<setup::Model> = setup::Entity::find().all(&db).await.unwrap();
+    let song_found: Vec<Song> = song_found.into_iter().map(|m| Song::from(m)).collect();
 
     println!("{song_found:?}");
+    return song_found;
 }

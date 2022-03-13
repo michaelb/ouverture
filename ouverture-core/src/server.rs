@@ -8,6 +8,7 @@ use tokio::net::{TcpListener, TcpStream};
 
 use crate::config::Config;
 use crate::library::*;
+use crate::music::song::Song;
 
 use log::{debug, error, info, trace, warn};
 
@@ -22,14 +23,16 @@ impl Server {
 
         let stop_flag = Arc::new(Mutex::new(false));
 
+        // accept many clients at the same time
         loop {
             let local_stop_flag = stop_flag.clone();
             let (mut socket, _) = listener.accept().await?;
+            let client_address = socket.peer_addr()?;
+            let client_address = format!("{}", client_address);
+            debug!("New client: {}", client_address);
 
-            // scope, instead of tokio::spawn, because we want to process requests from different clients
-            // synchronously: all request should be short enough and that will allow us to ensure there is
-            // is less mutlithreading shenanigans
-            {
+            let config = config.clone();
+            let handle = tokio::spawn(async move {
                 let mut buf = [0u8; 8];
 
                 // In a loop, read all the data from the socket
@@ -53,7 +56,13 @@ impl Server {
                     let decoded_command = bincode::deserialize::<Command>(&payload);
                     match decoded_command {
                         Ok(command) => {
-                            info!("{c} command received", c = command);
+                            info!("{command} command received");
+                            let res = Server::reply(
+                                Reply::Received(command.to_string()),
+                                &client_address,
+                            )
+                            .await;
+                            trace!("Replied 'received': status: {:?}", res);
                             match command {
                                 Command::Play(i) => (),
                                 Command::Pause => (),
@@ -62,7 +71,9 @@ impl Server {
                                 Command::Previous => (),
 
                                 Command::Scan => scan(&config).await,
-                                Command::List(i) => list(&config, i).await,
+                                Command::List(i) => {
+                                    let list = list(&config, i).await;
+                                }
 
                                 Command::Ping => (),
                                 Command::Restart => (),
@@ -72,17 +83,18 @@ impl Server {
                                     break;
                                 }
                             }
+                            match Server::reply(Reply::Done, &client_address).await {
+                                Ok(_) => trace!("Replied 'done' successfully"),
+                                Err(e) => warn!("Failed to send 'done' to client: {:?}", e),
+                            }
                         }
                         Err(e) => warn!("failed to decode message payload; err = {:?}", e),
                     };
-
-                    // // Write the data back
-                    // if let Err(e) = socket.write_all(&buf[0..n]).await {
-                    //     eprintln!("failed to write to socket; err = {:?}", e);
-                    //     return;
-                    // }
                 }
-            };
+                trace!("Terminating tokio thread");
+            });
+            trace!("Waiting on tokio thread join for shutdown...");
+            let res = tokio::join!(handle);
 
             // in case the Stop command was received, exit the loop.
             // The binded address is released at 'listener' drop
@@ -98,6 +110,13 @@ impl Server {
         let encoded: Vec<u8> = message.prepare_query()?;
         let mut stream = TcpStream::connect(address).await?;
         stream.write_all(&encoded).await?;
+        Ok(())
+    }
+
+    async fn reply(reply: Reply, address: &str) -> Result<(), Box<dyn Error + Send + Sync>> {
+        let encoded_reply: Vec<u8> = reply.prepare_query()?;
+        let mut stream = TcpStream::connect(address).await?;
+        stream.write_all(&encoded_reply).await?;
         Ok(())
     }
 }
@@ -122,7 +141,30 @@ pub enum Command {
     Stop,
 }
 
+#[non_exhaustive]
+#[derive(Display, Debug, Serialize, Deserialize, EnumString, EnumIter)]
+pub enum Reply {
+    Received(String),
+    List(Vec<Song>),
+    Done,
+}
+
 impl Command {
+    fn prepare_query(&self) -> Result<Vec<u8>, Box<dyn Error + Send + Sync>> {
+        // create a 8-bytes prefix: the length of the whole (prefix+message)
+        match bincode::serialized_size(self) {
+            Ok(size) => {
+                let mut message: Vec<u8> = (size as u64).to_ne_bytes().to_vec();
+                // add the serialized content to the message
+                message.extend(bincode::serialize(self).unwrap());
+                Ok(message)
+            }
+            Err(e) => Err(Box::new(e)),
+        }
+    }
+}
+
+impl Reply {
     fn prepare_query(&self) -> Result<Vec<u8>, Box<dyn Error + Send + Sync>> {
         // create a 8-bytes prefix: the length of the whole (prefix+message)
         match bincode::serialized_size(self) {
