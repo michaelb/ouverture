@@ -57,11 +57,9 @@ impl Server {
                     match decoded_command {
                         Ok(command) => {
                             info!("{command} command received");
-                            let res = Server::reply(
-                                Reply::Received(command.to_string()),
-                                &client_address,
-                            )
-                            .await;
+                            let res =
+                                Server::reply(Reply::Received(command.to_string()), &mut socket)
+                                    .await;
                             trace!("Replied 'received': status: {:?}", res);
                             match command {
                                 Command::Play(i) => (),
@@ -73,6 +71,12 @@ impl Server {
                                 Command::Scan => scan(&config).await,
                                 Command::List(i) => {
                                     let list = list(&config, i).await;
+                                    match Server::reply(Reply::List(list), &mut socket).await {
+                                        Ok(_) => trace!("Replied 'list' successfully"),
+                                        Err(e) => {
+                                            warn!("Failed to send 'list' reply to client: {:?}", e)
+                                        }
+                                    }
                                 }
 
                                 Command::Ping => (),
@@ -82,8 +86,9 @@ impl Server {
                                     *flag = true;
                                     break;
                                 }
-                            }
-                            match Server::reply(Reply::Done, &client_address).await {
+                            };
+
+                            match Server::reply(Reply::Done, &mut socket).await {
                                 Ok(_) => trace!("Replied 'done' successfully"),
                                 Err(e) => warn!("Failed to send 'done' to client: {:?}", e),
                             }
@@ -103,6 +108,51 @@ impl Server {
             }
         }
     }
+    pub async fn send_wait(
+        message: &Command,
+        address: &str,
+    ) -> Result<(), Box<dyn Error + Send + Sync>> {
+        let encoded: Vec<u8> = message.prepare_query()?;
+        let mut stream = TcpStream::connect(address).await?;
+        stream.write_all(&encoded).await?;
+
+        // Wait for 'done', displaying all other replies
+        let mut buf = [0u8; 8];
+        loop {
+            match stream.read(&mut buf).await {
+                // socket closed
+                Ok(n) if n == 0 => break,
+                Ok(n) => n,
+                Err(e) => {
+                    error!("failed to read from socket; err = {:?}", e);
+                    break;
+                }
+            };
+
+            let size = u64::from_ne_bytes(buf);
+
+            let mut payload = vec![0; size as usize];
+            let res = stream.read_exact(&mut payload[..]).await;
+            trace!("res from socket = {:?}", res);
+
+            let decoded_reply = bincode::deserialize::<Reply>(&payload);
+
+            match decoded_reply {
+                Ok(Reply::Done) => {
+                    println!("Done!");
+                    break;
+                }
+                Ok(Reply::List(l)) => {
+                    for song in l.iter() {
+                        println!("{song:?}");
+                    }
+                }
+                _ => println!("reply unmanaged yet"),
+            }
+        }
+
+        Ok(())
+    }
     pub async fn send(
         message: &Command,
         address: &str,
@@ -113,12 +163,20 @@ impl Server {
         Ok(())
     }
 
-    async fn reply(reply: Reply, address: &str) -> Result<(), Box<dyn Error + Send + Sync>> {
+    async fn reply(
+        reply: Reply,
+        stream: &mut TcpStream,
+    ) -> Result<(), Box<dyn Error + Send + Sync>> {
         let encoded_reply: Vec<u8> = reply.prepare_query()?;
-        let mut stream = TcpStream::connect(address).await?;
         stream.write_all(&encoded_reply).await?;
         Ok(())
     }
+    // async fn reply(reply: Reply, address: &str) -> Result<(), Box<dyn Error + Send + Sync>> {
+    //        let encoded_reply: Vec<u8> = reply.prepare_query()?;
+    //        let mut stream = TcpStream::connect(address).await?;
+    //        stream.write_all(&encoded_reply).await?;
+    //        Ok(())
+    //    }
 }
 
 #[non_exhaustive]

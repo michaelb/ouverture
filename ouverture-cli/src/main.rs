@@ -105,29 +105,29 @@ async fn launch_command(opt: &Opt) -> Result<(), Box<dyn Error + Send + Sync>> {
         + &opt.port.as_ref().unwrap_or(&String::from("6603"));
 
     if opt.stop {
-        Server::send(&Command::Stop, &server_addr).await?;
+        Server::send_wait(&Command::Stop, &server_addr).await?;
     }
 
     if let Some(optionnal_path) = opt.play.as_ref() {
-        Server::send(&Command::Play(optionnal_path.clone()), &server_addr).await?;
+        Server::send_wait(&Command::Play(optionnal_path.clone()), &server_addr).await?;
     }
     if opt.pause {
-        Server::send(&Command::Pause, &server_addr).await?;
+        Server::send_wait(&Command::Pause, &server_addr).await?;
     }
     if opt.toggle {
-        Server::send(&Command::Toggle, &server_addr).await?;
+        Server::send_wait(&Command::Toggle, &server_addr).await?;
     }
     if opt.next {
-        Server::send(&Command::Next, &server_addr).await?;
+        Server::send_wait(&Command::Next, &server_addr).await?;
     }
     if opt.previous {
-        Server::send(&Command::Previous, &server_addr).await?;
+        Server::send_wait(&Command::Previous, &server_addr).await?;
     }
     if opt.scan {
-        Server::send(&Command::Scan, &server_addr).await?;
+        Server::send_wait(&Command::Scan, &server_addr).await?;
     }
     if let Some(optionnal_str) = opt.list.as_ref() {
-        Server::send(&Command::List(optionnal_str.clone()), &server_addr).await?;
+        Server::send_wait(&Command::List(optionnal_str.clone()), &server_addr).await?;
     }
 
     if opt.ping {
@@ -135,7 +135,7 @@ async fn launch_command(opt: &Opt) -> Result<(), Box<dyn Error + Send + Sync>> {
             let start = std::time::Instant::now();
             let status_with_timeout = timeout(
                 Duration::from_secs(1),
-                Server::send(&Command::Ping, &server_addr),
+                Server::send_wait(&Command::Ping, &server_addr),
             )
             .await;
             let duration = start.elapsed();
