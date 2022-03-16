@@ -63,12 +63,7 @@ impl From<Song> for ActiveModel {
 impl From<Model> for Song {
     fn from(a: Model) -> Song {
         Song {
-            title: {
-                match a.title {
-                    Some(t) => Some(t),
-                    _ => None,
-                }
-            },
+            title: a.title.into(),
             ..Default::default()
         }
     }

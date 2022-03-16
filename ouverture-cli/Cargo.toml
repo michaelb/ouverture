@@ -13,3 +13,7 @@ ouverture-core = { path = "../ouverture-core"}
 tokio = { version = "1.12.0", features = ["full"] }
 color-eyre = "0.5"
 structopt = "0.3"
+
+async-stream = "0.3.3"
+futures-core="*"
+futures-util="*"

@@ -1,4 +1,6 @@
+use async_stream::try_stream;
 use bincode;
+use futures_core::stream::Stream;
 use serde::{Deserialize, Serialize};
 use std::error::Error;
 use std::sync::{Arc, Mutex};
@@ -153,14 +155,44 @@ impl Server {
 
         Ok(())
     }
-    pub async fn send(
-        message: &Command,
-        address: &str,
-    ) -> Result<(), Box<dyn Error + Send + Sync>> {
-        let encoded: Vec<u8> = message.prepare_query()?;
-        let mut stream = TcpStream::connect(address).await?;
-        stream.write_all(&encoded).await?;
-        Ok(())
+
+    pub async fn send<'a>(
+        message: &'a Command,
+        address: &'a str,
+    ) -> impl Stream<Item = Result<Reply, Box<dyn Error + Send + Sync>>> + 'a {
+        try_stream! {
+            let encoded: Vec<u8> = message.prepare_query()?;
+            let mut stream = TcpStream::connect(address).await?;
+            stream.write_all(&encoded).await?;
+             // Wait for 'done', yielding all other replies
+            let mut buf = [0u8; 8];
+            loop {
+                match stream.read(&mut buf).await {
+                    // socket closed
+                    Ok(n) if n == 0 => break,
+                    Ok(n) => n,
+                    Err(e) => {
+                        error!("failed to read from socket; err = {:?}", e);
+                        break;
+                    }
+                };
+
+                let size = u64::from_ne_bytes(buf);
+
+                let mut payload = vec![0; size as usize];
+                let res = stream.read_exact(&mut payload[..]).await;
+                trace!("res from socket = {:?}", res);
+
+                let decoded_reply = bincode::deserialize::<Reply>(&payload)?;
+             match decoded_reply {
+                 Reply::Done => { yield Reply::Done; break },
+                 r => yield r,
+             }
+
+
+            }
+
+        }
     }
 
     async fn reply(

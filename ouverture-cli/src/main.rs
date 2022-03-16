@@ -1,12 +1,16 @@
 use color_eyre::eyre::eyre;
 use color_eyre::{eyre::Report, eyre::WrapErr, Result, Section};
 use ouverture_core::config::Config;
-use ouverture_core::server::{Command, Server};
+use ouverture_core::server::{Command, Reply, Server};
 use std::error::Error;
 use std::path::Path;
 use std::time::Duration;
 use structopt::StructOpt;
 use tokio::time::timeout;
+
+use futures_core::stream::Stream;
+use futures_util::pin_mut;
+use futures_util::stream::StreamExt;
 
 #[derive(Debug, StructOpt)]
 #[structopt(
@@ -59,7 +63,7 @@ struct Opt {
     ping: bool,
 }
 
-#[tokio::main(flavor = "multi_thread")]
+#[tokio::main(flavor = "current_thread")]
 async fn main() -> Result<()> {
     color_eyre::install()?;
     let opt = Opt::from_args();
@@ -127,7 +131,7 @@ async fn launch_command(opt: &Opt) -> Result<(), Box<dyn Error + Send + Sync>> {
         Server::send_wait(&Command::Scan, &server_addr).await?;
     }
     if let Some(optionnal_str) = opt.list.as_ref() {
-        Server::send_wait(&Command::List(optionnal_str.clone()), &server_addr).await?;
+        handle(Server::send(&Command::List(optionnal_str.clone()), &server_addr).await).await;
     }
 
     if opt.ping {
@@ -156,4 +160,19 @@ async fn launch_command(opt: &Opt) -> Result<(), Box<dyn Error + Send + Sync>> {
     }
 
     Ok(())
+}
+
+async fn handle<T>(stream: T)
+where
+    T: Stream<Item = Result<Reply, Box<dyn Error + Send + Sync>>>,
+{
+    pin_mut!(stream);
+    while let Some(reply) = stream.next().await {
+        match reply {
+            Ok(Reply::Done) => println!("Done!"),
+            Ok(Reply::List(l)) => println!("Result: {:?}", l),
+            Err(e) => println!("Error: {:?}", e),
+            _ => println!("unamagned reply yet"),
+        }
+    }
 }
