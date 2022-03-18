@@ -5,6 +5,8 @@ use crate::music::song::{Song, SongSource};
 use sea_orm::prelude::*;
 use sea_orm::{entity::*, query::*};
 
+use color_eyre::Result;
+
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel)]
 #[sea_orm(table_name = "songs")]
 pub struct Model {

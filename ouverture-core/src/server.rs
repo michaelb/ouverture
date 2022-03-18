@@ -11,13 +11,16 @@ use tokio::net::{TcpListener, TcpStream};
 use crate::config::Config;
 use crate::library::*;
 use crate::music::song::Song;
+use color_eyre::Result;
 
 use log::{debug, error, info, trace, warn};
 
-pub struct Server {}
+pub struct Server {
+    config: Config,
+}
 
 impl Server {
-    pub async fn start(config: &Config) -> Result<(), Box<dyn Error>> {
+    pub async fn start(config: &Config) -> Result<()> {
         let address = config.server_address.clone() + ":" + &config.server_port.to_string();
         trace!("Starting TCP server on {:?}", &address);
         let listener = TcpListener::bind(&address).await?;
@@ -98,6 +101,7 @@ impl Server {
                         Err(e) => warn!("failed to decode message payload; err = {:?}", e),
                     };
                 }
+                Server::reply(Reply::Done, &mut socket).await; // when exiting because of 'stop'
                 trace!("Terminating tokio thread");
             });
             trace!("Waiting on tokio thread join for shutdown...");
@@ -138,18 +142,8 @@ impl Server {
             trace!("res from socket = {:?}", res);
 
             let decoded_reply = bincode::deserialize::<Reply>(&payload);
-
-            match decoded_reply {
-                Ok(Reply::Done) => {
-                    println!("Done!");
-                    break;
-                }
-                Ok(Reply::List(l)) => {
-                    for song in l.iter() {
-                        println!("{song:?}");
-                    }
-                }
-                _ => println!("reply unmanaged yet"),
+            if let Ok(Reply::Done) = decoded_reply {
+                break;
             }
         }
 

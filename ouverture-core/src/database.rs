@@ -14,11 +14,13 @@ use crate::config::Config;
 use crate::music::song::*;
 use log::{debug, info};
 
+use color_eyre::eyre::eyre;
+use color_eyre::Result;
 use sea_orm::entity::prelude::*;
 use sea_orm::{entity::*, query::*};
 use sea_orm::{Database, DatabaseConnection};
 
-pub async fn setup_db(config: Config) -> Result<PgEmbed, Box<dyn Error>> {
+pub async fn setup_db(config: Config) -> Result<PgEmbed> {
     std::fs::create_dir_all(config.database_dir.clone())?;
     let pg_settings = PgSettings {
         // Where to store the postgresql database
@@ -46,20 +48,28 @@ pub async fn setup_db(config: Config) -> Result<PgEmbed, Box<dyn Error>> {
         ..Default::default()
     };
 
-    let mut pg = PgEmbed::new(pg_settings, fetch_settings).await?;
+    let mut pg = PgEmbed::new(pg_settings, fetch_settings)
+        .await
+        .map_err(|e| eyre!(e.to_string()))?;
 
     // Download, unpack, create password file and database cluster
-    pg.setup().await?;
+    pg.setup().await.map_err(|e| eyre!(e.to_string()))?;
 
     Ok(pg)
 }
 
-pub async fn start_db(pg: &mut PgEmbed, config: Config) -> Result<(), Box<dyn Error>> {
-    pg.start_db().await?;
+pub async fn start_db(pg: &mut PgEmbed, config: Config) -> Result<()> {
+    pg.start_db().await.map_err(|e| eyre!(e.to_string()))?;
 
     // First time setup
-    if !pg.database_exists("ouverture").await? {
-        pg.create_database("ouverture").await?;
+    if !pg
+        .database_exists("ouverture")
+        .await
+        .map_err(|e| eyre!(e.to_string()))?
+    {
+        pg.create_database("ouverture")
+            .await
+            .map_err(|e| eyre!(e.to_string()))?;
         info!("empty database created");
 
         let database_url = "postgres://ouverture:ouverture@localhost:".to_string()
@@ -73,7 +83,7 @@ pub async fn start_db(pg: &mut PgEmbed, config: Config) -> Result<(), Box<dyn Er
     Ok(())
 }
 
-pub async fn add_db(config: &Config, song: Song) -> Result<(), Box<dyn Error>> {
+pub async fn add_db(config: &Config, song: Song) -> Result<()> {
     let database_url = "postgres://ouverture:ouverture@localhost:".to_string()
         + &config.database_port.to_string()
         + "/ouverture";
