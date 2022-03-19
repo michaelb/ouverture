@@ -47,6 +47,10 @@ pub enum Message {
     IntoMenu(pane_grid::Pane),
     IntoControlBar(pane_grid::Pane),
     IntoSearchBar(pane_grid::Pane),
+    IntoList(pane_grid::Pane),
+
+    // List message
+    Scrolled(f32),
 }
 
 impl Application for Ouverture {

@@ -14,6 +14,7 @@ use crate::style;
 use crate::Message;
 
 mod control_bar;
+mod list;
 mod menu;
 
 #[derive(Debug, Clone, Copy)]
@@ -133,6 +134,18 @@ impl Application for Panes {
                 }
                 self.panes.close(&pane);
             }
+            IntoList(pane) => {
+                let list = list::List::new(self.theme);
+                let result = self
+                    .panes
+                    .split(pane_grid::Axis::Horizontal, &pane, Box::new(list));
+
+                if let Some((pane, _)) = result {
+                    self.focus = Some(pane);
+                }
+                self.panes.close(&pane);
+            }
+
             IntoControlBar(pane) => {
                 let menu = control_bar::ControlBar::new(self.theme);
                 let result = self
@@ -213,6 +226,7 @@ struct Editor {
     split_vertically: button::State,
     into_menu: button::State,
     into_controlbar: button::State,
+    into_list: button::State,
     close: button::State,
     theme: style::Theme,
 }
@@ -226,6 +240,7 @@ impl Editor {
             split_vertically: button::State::new(),
             into_menu: button::State::new(),
             into_controlbar: button::State::new(),
+            into_list: button::State::new(),
             close: button::State::new(),
             theme,
         }
@@ -239,6 +254,7 @@ impl Content for Editor {
             split_vertically,
             into_menu,
             into_controlbar,
+            into_list,
             close,
             ..
         } = self;
@@ -276,6 +292,12 @@ impl Content for Editor {
                 into_controlbar,
                 "ControlBar",
                 Message::IntoControlBar(pane),
+                self.theme,
+            ))
+            .push(button(
+                into_list,
+                "List",
+                Message::IntoList(pane),
                 self.theme,
             ))
             .push(button(
