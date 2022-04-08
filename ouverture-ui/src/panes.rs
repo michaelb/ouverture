@@ -1,8 +1,10 @@
+use futures_core::stream::Stream;
 use iced::{
     button, executor, keyboard, pane_grid, scrollable, Align, Application, Button, Clipboard,
     Column, Command, Container, Element, HorizontalAlignment, Length, PaneGrid, Row, Scrollable,
     Text,
 };
+use std::sync::Arc;
 
 pub struct Panes {
     panes: pane_grid::State<Box<dyn Content>>,
@@ -12,13 +14,18 @@ pub struct Panes {
 }
 use crate::style;
 use crate::Message;
+use log::{debug, trace};
+use ouverture_core::server::Reply;
 
 mod control_bar;
 mod list;
 mod menu;
 
 #[derive(Debug, Clone, Copy)]
-pub enum PaneMessage {}
+pub enum PaneMessage {
+    ServerReply(pane_grid::Pane),
+    Refresh(pane_grid::Pane),
+}
 
 impl Default for Panes {
     fn default() -> Self {
@@ -144,6 +151,8 @@ impl Application for Panes {
                     self.focus = Some(pane);
                 }
                 self.panes.close(&pane);
+                debug!("transformed pane into list");
+                return async move { ChildMessage(PaneMessage::Refresh(pane)) }.into();
             }
 
             IntoControlBar(pane) => {
@@ -157,6 +166,15 @@ impl Application for Panes {
                 }
                 self.panes.close(&pane);
             }
+            ChildMessage(msg) => {
+                let command = Command::batch(
+                    self.panes
+                        .iter_mut()
+                        .map(|(p, s)| s.update(ChildMessage(msg), clipboard)),
+                );
+                debug!("passing message to children");
+                return command;
+            }
             _ => (),
         }
 
@@ -168,7 +186,7 @@ impl Application for Panes {
         let total_panes = self.panes.len();
 
         let theme = self.theme;
-        let pane_grid = PaneGrid::new(&mut self.panes, |pane, content| {
+        PaneGrid::new(&mut self.panes, |pane, content| {
             let is_focused = focus == Some(pane);
 
             let title_bar: pane_grid::TitleBar<Message> = if is_focused {
@@ -185,13 +203,8 @@ impl Application for Panes {
         .spacing(10)
         .on_click(Message::Clicked)
         .on_drag(Message::Dragged)
-        .on_resize(10, Message::Resized);
-
-        Container::new(pane_grid)
-            .width(Length::Fill)
-            .height(Length::Fill)
-            .padding(10)
-            .into()
+        .on_resize(10, Message::Resized)
+        .into()
     }
 }
 
@@ -217,6 +230,9 @@ fn handle_hotkey(key_code: keyboard::KeyCode) -> Option<Message> {
 
 pub trait Content {
     fn view(&mut self, pane: pane_grid::Pane, total_panes: usize) -> Element<Message>;
+    fn update(&mut self, message: Message, clipboard: &mut Clipboard) -> Command<Message> {
+        Command::none()
+    }
 }
 
 struct Editor {

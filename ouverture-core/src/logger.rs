@@ -49,6 +49,13 @@ pub fn setup_logger(dest: LogDestination, level: log::LevelFilter) -> Result<()>
             .level(level)
             .level_for("pg_embed", level_for_dependencies)
             .level_for("sqlx", level_for_dependencies)
+            .level_for("naga", log::LevelFilter::Error)
+            .level_for("gfx_backend_vulkan", log::LevelFilter::Error)
+            .level_for("tracing", log::LevelFilter::Error)
+            .level_for("wgpu_core", log::LevelFilter::Error)
+            .level_for("wgpu", log::LevelFilter::Error)
+            .level_for("winit", log::LevelFilter::Error)
+            .level_for("iced_wgpu", log::LevelFilter::Warn)
             .chain(std::io::stderr())
             .apply(),
     };

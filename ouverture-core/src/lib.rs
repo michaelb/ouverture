@@ -1,6 +1,7 @@
 pub mod config;
 pub mod database;
 pub mod library;
+pub mod logger;
 pub mod music;
 pub mod server;
 

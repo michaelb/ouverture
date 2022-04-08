@@ -2,13 +2,45 @@ use iced::{
     executor, pane_grid, Align, Application, Clipboard, Column, Command, Container, Element,
     Length, Row, Settings, Text,
 };
+mod opt;
 pub mod panes;
 pub mod style;
 
-use panes::Content;
+use opt::Opt;
+use ouverture_core::config::Config;
+use ouverture_core::logger::{setup_logger, LogDestination::*};
+use ouverture_core::start;
+use structopt::StructOpt;
+
+use log::LevelFilter::*;
+
+use log::{debug, info, warn};
+use panes::{Content, PaneMessage};
 
 #[tokio::main]
 async fn main() -> iced::Result {
+    let opts = Opt::from_args();
+    let level = match opts.log_level.as_deref() {
+        None => Info,
+        Some("trace") => Trace,
+        Some("debug") => Debug,
+        Some("info") => Info,
+        Some("warn") => Warn,
+        Some("error") => Error,
+        Some("off") => Off,
+        Some(_) => Info, // unreachable because of the arg parser
+    };
+    match opts.log_destination.clone() {
+        None => setup_logger(StdErr, level),
+        Some(path) => setup_logger(File(path), level),
+    }
+    .unwrap();
+    debug!("Opts = {:?}", opts);
+    let config = match opts.config {
+        None => Config::default(),
+        Some(path) => Config::new_from_file(&path).unwrap(),
+    };
+
     Ouverture::run(Settings::default())
 }
 
@@ -20,6 +52,8 @@ struct Ouverture {
 
 #[derive(Debug, Clone, Copy)]
 pub enum Message {
+    Nothing,
+
     // SliderChanged(f32),
     ThemeChanged(style::Theme),
 
@@ -32,6 +66,7 @@ pub enum Message {
     Resized(pane_grid::ResizeEvent),
     Close(pane_grid::Pane),
     CloseFocused,
+    ChildMessage(PaneMessage),
 
     //ControlBar messages
     Toggle,
@@ -53,7 +88,7 @@ pub enum Message {
     Scrolled(f32),
 }
 
-impl Application for Ouverture {
+impl<'a> Application for Ouverture {
     type Message = Message;
     type Executor = executor::Default;
     type Flags = ();
@@ -68,12 +103,15 @@ impl Application for Ouverture {
 
     fn update(&mut self, message: Message, clipboard: &mut Clipboard) -> Command<Message> {
         match message {
-            Message::ThemeChanged(theme) => self.theme = theme,
+            Message::ThemeChanged(theme) => {
+                self.theme = theme;
+                Command::none()
+            }
             any => {
-                self.panes.update(any, clipboard);
+                debug!("updating panes");
+                self.panes.update(any, clipboard)
             }
         }
-        Command::none()
     }
 
     fn view(&mut self) -> Element<Message> {

@@ -12,3 +12,12 @@ ouverture-core = { path = "../ouverture-core"}
 tokio = { version = "1.12.0", features = ["full"] }
 iced = {version = "0.3", features = ["debug"]}
 enum_dispatch = "0.3.7"
+
+log = "0.4"
+fern = { version = "0.6", features = ["colored"] }
+chrono = "0.4"
+structopt = "*"
+
+futures-core="*"
+async-stream = "0.3.3"
+futures-util="*"
