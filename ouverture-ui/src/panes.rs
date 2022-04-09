@@ -14,8 +14,9 @@ pub struct Panes {
 }
 use crate::style;
 use crate::Message;
-use log::{debug, trace};
+use log::{debug, trace, warn};
 use ouverture_core::server::Reply;
+use std::any::Any;
 
 mod control_bar;
 mod list;
@@ -147,12 +148,18 @@ impl Application for Panes {
                     .panes
                     .split(pane_grid::Axis::Horizontal, &pane, Box::new(list));
 
-                if let Some((pane, _)) = result {
-                    self.focus = Some(pane);
-                }
-                self.panes.close(&pane);
+                let new_pane = {
+                    if let Some((new_pane, _)) = result {
+                        self.focus = Some(new_pane);
+                        self.panes.close(&pane);
+                        new_pane
+                    } else {
+                        warn!("failed to close pane, keeping current one");
+                        pane
+                    }
+                };
                 debug!("transformed pane into list");
-                return async move { ChildMessage(PaneMessage::Refresh(pane)) }.into();
+                return async move { ChildMessage(PaneMessage::Refresh(new_pane)) }.into();
             }
 
             IntoControlBar(pane) => {
@@ -166,6 +173,17 @@ impl Application for Panes {
                 }
                 self.panes.close(&pane);
             }
+            RefreshList(pane) => {
+                let mut list: &mut list::List = self
+                    .panes
+                    .get_mut(&pane)
+                    .unwrap()
+                    .as_any_mut()
+                    .downcast_mut::<list::List>()
+                    .unwrap();
+                return list.update(RefreshList(pane), clipboard);
+            }
+
             ChildMessage(msg) => {
                 let command = Command::batch(
                     self.panes
@@ -194,6 +212,7 @@ impl Application for Panes {
             } else {
                 pane_grid::TitleBar::new(Text::new("not focused")).padding(10)
             };
+            debug!("updating view in panes");
             pane_grid::Content::new(content.view(pane, total_panes))
                 .title_bar(title_bar)
                 .style(theme)
@@ -233,6 +252,8 @@ pub trait Content {
     fn update(&mut self, message: Message, clipboard: &mut Clipboard) -> Command<Message> {
         Command::none()
     }
+    fn as_any(&self) -> &dyn Any;
+    fn as_any_mut(&mut self) -> &mut dyn Any;
 }
 
 struct Editor {
@@ -263,6 +284,12 @@ impl Editor {
     }
 }
 impl Content for Editor {
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+    fn as_any_mut(&mut self) -> &mut dyn Any {
+        self
+    }
     fn view(&mut self, pane: pane_grid::Pane, total_panes: usize) -> Element<Message> {
         let Editor {
             scroll,

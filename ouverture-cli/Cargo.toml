@@ -10,7 +10,7 @@ description = "A next-generation music player and manager library CLI based ouve
 
 [dependencies]
 ouverture-core = { path = "../ouverture-core"}
-tokio = { version = "1.12.0", features = ["full"] }
+tokio = { version = "1.17.0", features = ["full"] }
 color-eyre = "0.5"
 structopt = "0.3"
 

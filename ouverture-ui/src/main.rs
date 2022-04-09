@@ -9,6 +9,7 @@ pub mod style;
 use opt::Opt;
 use ouverture_core::config::Config;
 use ouverture_core::logger::{setup_logger, LogDestination::*};
+use ouverture_core::music::song::Song;
 use ouverture_core::start;
 use structopt::StructOpt;
 
@@ -17,8 +18,7 @@ use log::LevelFilter::*;
 use log::{debug, info, warn};
 use panes::{Content, PaneMessage};
 
-#[tokio::main]
-async fn main() -> iced::Result {
+fn main() -> iced::Result {
     let opts = Opt::from_args();
     let level = match opts.log_level.as_deref() {
         None => Info,
@@ -86,11 +86,12 @@ pub enum Message {
 
     // List message
     Scrolled(f32),
+    RefreshList(pane_grid::Pane),
 }
 
 impl<'a> Application for Ouverture {
     type Message = Message;
-    type Executor = executor::Default;
+    type Executor = iced_futures::executor::Tokio;
     type Flags = ();
 
     fn new(_flags: ()) -> (Self, Command<Message>) {
