@@ -2,17 +2,21 @@
 name = "ouverture-ui"
 version = "0.1.0"
 edition = "2021"
-license = "MIT"
+license = "GPL-3.0-or-later"
 authors = ["Michael Bleuez <michael.bleuez2@gmail.com>"]
 description = "A next-generation music player and manager GUI based of ouverture-core"
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+homepage = "https://github.com/michaelb/ouverture"
+repository = "https://github.com/michaelb/ouverture"
+readme = "README.md"
+categories = ["mutlimedia::audio"]
 
 [[bin]]
 name = "ouverture"
 path = "src/main.rs"
 
 [dependencies]
-ouverture-core = { path = "../ouverture-core"}
+ouverture-core = { version = "*", path = "../ouverture-core"}
 tokio = { version = "1.17.0", features = ["full"] }
 iced = {version = "0.3", features = ["debug"]}
 iced_futures = { version = "0.3.0", features = ["tokio"] }
