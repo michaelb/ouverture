@@ -18,7 +18,7 @@
 # ouverture
 A next-generation music player and manager
 
-Very much at Work-In-*Planning* stage now
+Very much at Work-In-*Planning* stage now 😄
 
 
 ## Planned features
@@ -67,6 +67,7 @@ Very much at Work-In-*Planning* stage now
 - [postrgre](https://github.com/postgres/postgres)
 - [beets](https://github.com/beetbox/beets)
 - [yt-dlp](https://github.com/yt-dlp/yt-dlp)
+- [rustic](https://github.com/rustic-music-player/rustic)
 
 ## Maybe-useful ressources
 

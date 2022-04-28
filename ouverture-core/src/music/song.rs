@@ -1,4 +1,7 @@
+use audiotags::Tag;
 use chrono::prelude::{DateTime, Local};
+use infer;
+use log::{debug, info, trace};
 use serde::{Deserialize, Serialize};
 use std::error::Error;
 use std::path::{Path, PathBuf};
@@ -6,12 +9,12 @@ use std::time::Duration;
 
 use sea_orm::prelude::*;
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub enum AudioFormat {
     mp3,
     wav,
+    aac,
     ogg,
-    opus,
     flac,
     m4a,
     unsupported,
@@ -56,6 +59,7 @@ pub struct Song {
 pub enum SongSource {
     FilePath(PathBuf),
     YoutubeUrl(String),
+    Unknown,
 }
 
 use SongSource::*;
@@ -64,10 +68,25 @@ impl Into<String> for SongSource {
         match self {
             FilePath(path) => String::from("file:") + path.to_str().unwrap(),
             YoutubeUrl(url) => String::from("yt_url:") + &url,
+            Unknown => String::from("unknown"),
         }
     }
 }
 
+impl From<String> for SongSource {
+    fn from(s: String) -> Self {
+        let yt = "yt_url:";
+        if s.starts_with(yt) {
+            return YoutubeUrl(s.strip_prefix(yt).unwrap().into());
+        }
+        let path = "path:";
+        if s.starts_with(path) {
+            return FilePath(s.strip_prefix(path).unwrap().into());
+        }
+
+        return Unknown;
+    }
+}
 #[derive(Clone, Debug, Serialize, Deserialize)]
 /// Rating in % points, 0 = worst, and 100 = best
 pub enum Rating {
@@ -103,8 +122,37 @@ impl Default for Song {
 
 impl Song {
     pub fn from_path(path: &Path) -> Song {
+        let tag = Tag::new().read_from_path(path).unwrap();
+
+        let kind = infer::get_from_path(path)
+            .expect("file type read successfully")
+            .expect("file type known");
+
+        use AudioFormat::*;
+        let format = match kind.mime_type() {
+            "audio/midi" => unsupported,
+            "audio/mpeg" => mp3,
+            "audio/m4a" => m4a,
+            "audio/ogg" => ogg,
+            "audio/x-flac" => flac,
+            "audio/x-wav" => wav,
+            "audio/amr" => unsupported,
+            "audio/aac" => aac,
+            "audio/x-aiff" => unsupported,
+            _ => unsupported,
+        };
+
+        if format == unsupported {
+            // TODO reject the new song
+        }
+
         Song {
             source: Some(FilePath(path.to_path_buf())),
+            title: tag.title().map(|s| s.into()),
+            artist: tag.artists().map(|v| v[0].to_string()),
+            album: tag.album().map(|a| a.title.to_string()),
+            format,
+
             ..Default::default()
         }
     }

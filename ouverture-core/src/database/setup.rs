@@ -66,6 +66,12 @@ impl From<Model> for Song {
     fn from(a: Model) -> Song {
         Song {
             title: a.title.into(),
+            artist: a.artist.into(),
+            album: a.album.into(),
+            source: match a.source {
+                None => None,
+                Some(source) => Some(source.into()),
+            },
             ..Default::default()
         }
     }

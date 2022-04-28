@@ -7,20 +7,33 @@ authors = ["Michael Bleuez <michael.bleuez2@gmail.com>"]
 description = "A next-generation music player and manager GUI based of ouverture-core"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[[bin]]
+name = "ouverture"
+path = "src/main.rs"
+
 [dependencies]
 ouverture-core = { path = "../ouverture-core"}
 tokio = { version = "1.17.0", features = ["full"] }
 iced = {version = "0.3", features = ["debug"]}
 iced_futures = { version = "0.3.0", features = ["tokio"] }
+iced_native = { version = "0.4.0" }
+iced_graphics = { version = "0.2.0" }
+iced_core = { version = "0.4.0" }
+iced_wgpu = { version = "0.4.0" }
+
+#widgets from different sources
+ajour-widgets = { version =  "1.0.1", features=["wgpu"]}
 
 enum_dispatch = "0.3.7"
 
 log = "0.4"
 fern = { version = "0.6", features = ["colored"] }
 chrono = "0.4"
-structopt = "*"
+structopt = "0.3.26"
 
-futures-core="*"
+futures-core="0.3.21"
 async-stream = "0.3.3"
-futures-util="*"
+futures-util="0.3.21"
+
+copystr="0.0.5"
 

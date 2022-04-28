@@ -6,6 +6,10 @@ edition = "2021"
 authors = ["Michael Bleuez <michael.bleuez2@gmail.com>"]
 license = "MIT"
 
+[[bin]]
+name = "ouverture-server"
+path = "src/main.rs"
+
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
@@ -35,3 +39,8 @@ futures-lite="*"
 futures-core="*"
 
 sea-orm = { version = "0.6", features = ["sqlx-postgres", "runtime-tokio-rustls", "macros" ], default-features = false }
+
+
+
+audiotags = "*"
+infer = "0.3"

@@ -19,7 +19,7 @@ use ouverture_core::server::Reply;
 use std::any::Any;
 
 mod control_bar;
-mod list;
+pub mod list;
 mod menu;
 
 #[derive(Debug, Clone, Copy)]
@@ -182,6 +182,16 @@ impl Application for Panes {
                     .downcast_mut::<list::List>()
                     .unwrap();
                 return list.update(RefreshList(pane), clipboard);
+            }
+            ResizeColumn(pane, event) => {
+                let mut list: &mut list::List = self
+                    .panes
+                    .get_mut(&pane)
+                    .unwrap()
+                    .as_any_mut()
+                    .downcast_mut::<list::List>()
+                    .unwrap();
+                return list.update(ResizeColumn(pane, event), clipboard);
             }
 
             ChildMessage(msg) => {
