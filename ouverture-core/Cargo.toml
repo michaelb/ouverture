@@ -8,7 +8,7 @@ license = "GPL-3.0-or-later"
 homepage = "https://github.com/michaelb/ouverture"
 repository = "https://github.com/michaelb/ouverture"
 readme = "README.md"
-categories = ["mutlimedia::audio"]
+categories = ["multimedia::audio"]
 
 [[bin]]
 name = "ouverture-server"
