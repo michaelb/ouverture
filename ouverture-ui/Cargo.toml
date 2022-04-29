@@ -16,7 +16,7 @@ name = "ouverture"
 path = "src/main.rs"
 
 [dependencies]
-ouverture-core = { version = "*", path = "../ouverture-core"}
+ouverture-core = { version = "0.1.0", path = "../ouverture-core"}
 tokio = { version = "1.17.0", features = ["full"] }
 iced = {version = "0.3", features = ["debug"]}
 iced_futures = { version = "0.3.0", features = ["tokio"] }
