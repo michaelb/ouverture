@@ -1,4 +1,5 @@
 use super::header::*;
+use crate::widgets::style::table_row;
 use crate::widgets::{header, Header, TableRow};
 use crate::Message;
 
@@ -18,7 +19,6 @@ pub fn data_row_container<'a, 'b>(
     row_id: usize,
     // installed_for_flavor: bool,
     // install_addon: Option<&InstallAddon>,
-    // is_odd: Option<bool>,
 ) -> TableRow<'a, Message> {
     let default_height = Length::Units(26);
     let default_row_height = 26;
@@ -162,11 +162,11 @@ pub fn data_row_container<'a, 'b>(
         .inner_row_height(default_row_height)
         .on_press(move |_| Message::RowCliked(row_id));
 
-    // if is_odd == Some(true) {
-    //     table_row = table_row.style(style::TableRowAlternate(color_palette))
-    // } else {
-    //     table_row = table_row.style(style::TableRow(color_palette))
-    // }
+    if row_id % 2 == 0 {
+        // table_row = table_row.style(style::TableRowAlternate(color_palette))
+    } else {
+        // table_row = table_row.style(style::TableRow(color_palette))
+    }
 
     table_row
 }

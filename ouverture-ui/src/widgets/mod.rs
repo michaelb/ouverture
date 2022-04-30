@@ -1,7 +1,7 @@
 use iced_wgpu::Renderer;
 
 mod renderer;
-mod style;
+pub mod style;
 mod widget;
 
 pub use widget::header;
