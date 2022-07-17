@@ -27,8 +27,6 @@ iced_wgpu = { version = "0.5.1" }
 serde ="1.0"
 
 
-enum_dispatch = "0.3.7"
-
 log = "0.4"
 fern = { version = "0.6", features = ["colored"] }
 chrono = "0.4"
@@ -37,6 +35,3 @@ structopt = "0.3.26"
 futures-core="0.3.21"
 async-stream = "0.3.3"
 futures-util="0.3.21"
-
-copystr="0.0.5"
-

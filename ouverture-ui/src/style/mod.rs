@@ -53,7 +53,7 @@ pub struct BrightColors {
 
 impl Default for Theme {
     fn default() -> Self {
-        Theme::light()
+        Theme::forest_night()
     }
 }
 
