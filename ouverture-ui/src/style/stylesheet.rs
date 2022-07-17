@@ -689,6 +689,7 @@ impl pick_list::StyleSheet for PickList {
         pick_list::Style {
             text_color: self.0.bright.surface,
             background: self.0.base.background.into(),
+            placeholder_color: self.0.base.background.into(),
             border_width: 1.0,
             border_color: Color {
                 a: 0.5,
@@ -728,6 +729,7 @@ impl pick_list::StyleSheet for SecondaryPickList {
         pick_list::Style {
             text_color: self.0.bright.surface,
             background: self.0.base.foreground.into(),
+            placeholder_color: self.0.base.background.into(),
             border_width: 0.0,
             border_color: self.0.base.background,
             border_radius: 2.0,
@@ -771,6 +773,7 @@ impl pick_list::StyleSheet for MenuPickList {
         pick_list::Style {
             text_color: self.0.bright.primary,
             background: self.0.base.foreground.into(),
+            placeholder_color: self.0.base.background.into(),
             border_width: 0.0,
             border_radius: 2.0,
             border_color: Color {
@@ -813,6 +816,7 @@ impl checkbox::StyleSheet for DefaultCheckbox {
         checkbox::Style {
             background: Background::Color(self.0.base.background),
             checkmark_color: self.0.bright.primary,
+            text_color: Some(self.0.bright.primary),
             border_radius: 2.0,
             border_width: 1.0,
             border_color: self.0.normal.primary,
@@ -823,6 +827,7 @@ impl checkbox::StyleSheet for DefaultCheckbox {
         checkbox::Style {
             background: Background::Color(self.0.base.foreground),
             checkmark_color: self.0.bright.primary,
+            text_color: Some(self.0.bright.primary),
             border_radius: 2.0,
             border_width: 2.0,
             border_color: self.0.bright.primary,
@@ -836,6 +841,7 @@ impl checkbox::StyleSheet for AlwaysCheckedCheckbox {
         checkbox::Style {
             background: Background::Color(self.0.base.background),
             checkmark_color: self.0.normal.primary,
+            text_color: Some(self.0.bright.primary),
             border_radius: 2.0,
             border_width: 1.0,
             border_color: self.0.normal.primary,

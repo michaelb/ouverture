@@ -5,7 +5,6 @@ use iced::{
 mod opt;
 pub mod panes;
 pub mod style;
-pub mod widgets;
 
 use opt::Opt;
 use ouverture_core::config::Config;
@@ -18,10 +17,8 @@ use log::LevelFilter::*;
 use style::stylesheet::*;
 
 use log::{debug, info, warn};
-use panes::list::ColumnKey;
+// use panes::list::ColumnKey;
 use panes::{Content, PaneMessage};
-
-use crate::widgets::header;
 
 fn main() -> iced::Result {
     let opts = Opt::from_args();
@@ -88,12 +85,11 @@ pub enum Message {
     IntoControlBar(pane_grid::Pane),
     IntoSearchBar(pane_grid::Pane),
     IntoList(pane_grid::Pane),
-
-    // List message
-    Scrolled(f32),
-    RefreshList(pane_grid::Pane),
-    ResizeColumn(pane_grid::Pane, header::ResizeEvent),
-    RowCliked(usize),
+    // // List message
+    // Scrolled(f32),
+    // RefreshList(pane_grid::Pane),
+    // ResizeColumn(pane_grid::Pane, header::ResizeEvent),
+    // RowCliked(usize),
 }
 
 impl<'a> Application for Ouverture {
