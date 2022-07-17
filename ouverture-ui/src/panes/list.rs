@@ -1,7 +1,6 @@
-use iced::Clipboard;
 use iced::{
-    button, pane_grid, pick_list, scrollable, Align, Button, Column, Command, Container, Element,
-    HorizontalAlignment, Length, Row, Scrollable, Text,
+    alignment::Horizontal, button, pane_grid, pick_list, scrollable, Alignment, Button, Column,
+    Command, Container, Element, Length, Row, Scrollable, Text,
 };
 use std::any::Any;
 
@@ -65,7 +64,7 @@ impl Content for List {
             .padding(5)
             .into()
     }
-    fn update(&mut self, message: Message, clipboard: &mut Clipboard) -> Command<Message> {
+    fn update(&mut self, message: Message) -> Command<Message> {
         match message {
             Message::ChildMessage(PaneMessage::Refresh(pane)) => {
                 let server_address = "127.0.0.1:6603";

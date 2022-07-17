@@ -1,10 +1,9 @@
 use crate::widgets::{header, Header, TableRow};
 use crate::Message;
 
-use iced::Clipboard;
 use iced::{
-    button, pane_grid, pick_list, scrollable, Align, Button, Column, Command, Container, Element,
-    HorizontalAlignment, Length, Row, Scrollable, Text,
+    button, pane_grid, pick_list, scrollable, Button, Column, Command, Container, Element, Length,
+    Row, Scrollable, Text,
 };
 
 #[derive(Copy, Clone)]

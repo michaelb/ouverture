@@ -1,8 +1,8 @@
 #![allow(clippy::type_complexity)]
 
 use iced_native::{
-    container, event, layout, mouse, space, Align, Clipboard, Container, Element, Event, Hasher,
-    Layout, Length, Point, Rectangle, Space, Widget,
+    event, layout, mouse, renderer, widget::container, widget::space, widget::Container,
+    widget::Space, Alignment, Element, Event, Hasher, Layout, Length, Point, Rectangle, Widget,
 };
 
 mod state;
@@ -10,7 +10,7 @@ pub use state::State;
 
 pub struct Header<'a, Message, Renderer>
 where
-    Renderer: self::Renderer,
+    Renderer: renderer::Renderer,
 {
     spacing: u16,
     width: Length,
@@ -26,7 +26,7 @@ where
 
 impl<'a, Message, Renderer> Header<'a, Message, Renderer>
 where
-    Renderer: 'a + self::Renderer,
+    Renderer: 'a + renderer::Renderer,
     Message: 'a,
 {
     pub fn new(
@@ -122,7 +122,7 @@ where
 
 impl<'a, Message, Renderer> Widget<Message, Renderer> for Header<'a, Message, Renderer>
 where
-    Renderer: 'a + self::Renderer,
+    Renderer: 'a + renderer::Renderer,
     Message: 'a,
 {
     fn width(&self) -> Length {
@@ -142,7 +142,7 @@ where
             &limits,
             0.0,
             self.spacing as f32,
-            Align::Start,
+            Alignment::Start,
             &self.children,
         )
     }
@@ -153,7 +153,6 @@ where
         layout: Layout<'_>,
         cursor_position: Point,
         renderer: &Renderer,
-        clipboard: &mut dyn Clipboard,
         messages: &mut Vec<Message>,
     ) -> event::Status {
         let in_bounds = layout.bounds().contains(cursor_position);
@@ -257,14 +256,7 @@ where
             .iter_mut()
             .zip(layout.children())
             .map(|(child, layout)| {
-                child.on_event(
-                    event.clone(),
-                    layout,
-                    cursor_position,
-                    renderer,
-                    clipboard,
-                    messages,
-                )
+                child.on_event(event.clone(), layout, cursor_position, renderer, messages)
             })
             .fold(event::Status::Ignored, event::Status::merge)
     }
@@ -272,14 +264,12 @@ where
     fn draw(
         &self,
         renderer: &mut Renderer,
-        defaults: &Renderer::Defaults,
         layout: Layout<'_>,
         cursor_position: Point,
         viewport: &Rectangle,
     ) -> Renderer::Output {
-        self::Renderer::draw(
+        renderer::Renderer::draw(
             renderer,
-            defaults,
             &self.children,
             layout,
             cursor_position,
@@ -288,29 +278,28 @@ where
         )
     }
 
-    fn hash_layout(&self, state: &mut Hasher) {
-        use std::hash::Hash;
-
-        struct Marker;
-        std::any::TypeId::of::<Marker>().hash(state);
-
-        self.width.hash(state);
-        self.height.hash(state);
-        self.spacing.hash(state);
-        self.left_margin.hash(state);
-        self.right_margin.hash(state);
-        self.leeway.hash(state);
-
-        for child in &self.children {
-            child.hash_layout(state);
-        }
-    }
+    // fn hash_layout(&self, state: &mut Hasher) {
+    //     use std::hash::Hash;
+    //
+    //     struct Marker;
+    //     std::any::TypeId::of::<Marker>().hash(state);
+    //
+    //     self.width.hash(state);
+    //     self.height.hash(state);
+    //     self.spacing.hash(state);
+    //     self.left_margin.hash(state);
+    //     self.right_margin.hash(state);
+    //     self.leeway.hash(state);
+    //
+    //     for child in &self.children {
+    //         child.hash_layout(state);
+    //     }
+    // }
 }
 
-pub trait Renderer: iced_native::Renderer + container::Renderer + space::Renderer + Sized {
+pub trait Renderer: renderer::Renderer + Sized {
     fn draw<Message>(
         &mut self,
-        defaults: &Self::Defaults,
         children: &[Element<'_, Message, Self>],
         layout: Layout<'_>,
         cursor_position: Point,
@@ -321,7 +310,7 @@ pub trait Renderer: iced_native::Renderer + container::Renderer + space::Rendere
 
 impl<'a, Message, Renderer> From<Header<'a, Message, Renderer>> for Element<'a, Message, Renderer>
 where
-    Renderer: 'a + self::Renderer,
+    Renderer: 'a + renderer::Renderer,
     Message: 'a,
 {
     fn from(header: Header<'a, Message, Renderer>) -> Element<'a, Message, Renderer> {

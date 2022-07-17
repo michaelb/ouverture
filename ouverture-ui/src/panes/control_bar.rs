@@ -1,7 +1,10 @@
-use iced::{button, pane_grid, Button, Container, Element, HorizontalAlignment, Length, Row, Text};
+use iced::{
+    alignment::Horizontal, button, pane_grid, Button, Container, Element, Length, Row, Text,
+};
 
 use super::Content;
 use crate::style;
+use crate::style::stylesheet::*;
 use crate::Message;
 
 pub struct ControlBar {
@@ -49,13 +52,13 @@ impl ControlBar {
                 state,
                 Text::new(label)
                     .width(Length::Fill)
-                    .horizontal_alignment(HorizontalAlignment::Center)
+                    .horizontal_alignment(Horizontal::Center)
                     .size(16),
             )
             .width(Length::Fill)
             .padding(8)
             .on_press(message)
-            .style(style)
+            .style(NormalTextButton(style))
         };
 
         let controls = Row::new()

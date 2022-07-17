@@ -1,6 +1,6 @@
 use iced::{
-    executor, pane_grid, Align, Application, Clipboard, Column, Command, Container, Element,
-    Length, Row, Settings, Text,
+    executor, pane_grid, Alignment, Application, Column, Command, Container, Element, Length, Row,
+    Settings, Text,
 };
 mod opt;
 pub mod panes;
@@ -15,6 +15,7 @@ use ouverture_core::start;
 use structopt::StructOpt;
 
 use log::LevelFilter::*;
+use style::stylesheet::*;
 
 use log::{debug, info, warn};
 use panes::list::ColumnKey;
@@ -97,7 +98,7 @@ pub enum Message {
 
 impl<'a> Application for Ouverture {
     type Message = Message;
-    type Executor = iced_futures::executor::Tokio;
+    type Executor = iced_futures::backend::native::tokio::Executor;
     type Flags = ();
 
     fn new(_flags: ()) -> (Self, Command<Message>) {
@@ -108,7 +109,7 @@ impl<'a> Application for Ouverture {
         String::from("Ouverture")
     }
 
-    fn update(&mut self, message: Message, clipboard: &mut Clipboard) -> Command<Message> {
+    fn update(&mut self, message: Message) -> Command<Message> {
         debug!("top-level message: {:?}", message);
         match message {
             Message::ThemeChanged(theme) => {
@@ -117,7 +118,7 @@ impl<'a> Application for Ouverture {
             }
             any => {
                 debug!("updating panes");
-                self.panes.update(any, clipboard)
+                self.panes.update(any)
             }
         }
     }
@@ -130,7 +131,7 @@ impl<'a> Application for Ouverture {
             .height(Length::Fill)
             .center_x()
             .center_y()
-            .style(self.theme)
+            .style(NormalBackgroundContainer(self.theme))
             .into()
     }
 }

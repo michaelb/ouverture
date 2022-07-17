@@ -1,9 +1,10 @@
 use iced::{
-    button, pane_grid, Button, Column, Container, Element, HorizontalAlignment, Length, Text,
+    alignment::Horizontal, button, pane_grid, Button, Column, Container, Element, Length, Text,
 };
 
 use super::Content;
 use crate::style;
+use crate::style::stylesheet::*;
 use crate::Message;
 
 pub struct Menu {
@@ -52,13 +53,13 @@ impl Menu {
                 state,
                 Text::new(label)
                     .width(Length::Fill)
-                    .horizontal_alignment(HorizontalAlignment::Center)
+                    .horizontal_alignment(Horizontal::Center)
                     .size(16),
             )
             .width(Length::Fill)
             .padding(8)
             .on_press(message)
-            .style(style)
+            .style(NormalTextButton(style))
         };
 
         let controls = Column::new()

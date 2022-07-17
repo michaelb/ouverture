@@ -3,10 +3,9 @@ use crate::widgets::style::table_row;
 use crate::widgets::{header, Header, TableRow};
 use crate::Message;
 
-use iced::Clipboard;
 use iced::{
-    button, pane_grid, pick_list, scrollable, Align, Button, Column, Command, Container, Element,
-    HorizontalAlignment, Length, Row, Scrollable, Text,
+    alignment::Horizontal, button, pane_grid, pick_list, scrollable, Alignment, Button, Column,
+    Command, Container, Element, Length, Row, Scrollable, Text,
 };
 use ouverture_core::music::song::Song;
 

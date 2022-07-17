@@ -1,5 +1,5 @@
 use iced::{
-    button, executor, pane_grid, scrollable, slider, Application, Button, Clipboard, Column,
+    button, executor, pane_grid, scrollable, slider, Application, Button, Column,
     Command, Container, Element, Length, ProgressBar, Radio, Row, Rule, Sandbox, Scrollable,
     Settings, Slider, Space, Text, Align
 };

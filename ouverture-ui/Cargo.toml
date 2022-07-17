@@ -18,15 +18,14 @@ path = "src/main.rs"
 [dependencies]
 ouverture-core = { version = "0.1.0", path = "../ouverture-core"}
 tokio = { version = "1.17.0", features = ["full"] }
-iced = {version = "0.3", features = ["debug"]}
-iced_futures = { version = "0.3.0", features = ["tokio"] }
-iced_native = { version = "0.4.0" }
-iced_graphics = { version = "0.2.0" }
-iced_core = { version = "0.4.0" }
-iced_wgpu = { version = "0.4.0" }
+iced = {version = "0.4", features = ["debug"]}
+iced_futures = { version = "0.4.1", features = ["tokio"] }
+iced_native = { version = "0.5.1" }
+iced_graphics = { version = "0.3.1" }
+iced_core = { version = "0.5.0" }
+iced_wgpu = { version = "0.5.1" }
+serde ="1.0"
 
-#widgets from different sources
-ajour-widgets = { version =  "1.0.1", features=["wgpu"]}
 
 enum_dispatch = "0.3.7"
 

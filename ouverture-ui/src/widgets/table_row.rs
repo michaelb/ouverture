@@ -2,7 +2,7 @@
 
 pub use crate::widgets::style::table_row::{Style, StyleSheet};
 use iced_native::{
-    event, layout, mouse, overlay, Align, Clipboard, Element, Event, Hasher, Layout, Length, Point,
+    event, layout, mouse, overlay, Alignment, Element, Event, Hasher, Layout, Length, Point,
     Rectangle, Widget,
 };
 
@@ -83,13 +83,13 @@ where
     }
 
     /// Sets the content alignment for the horizontal axis of the [`TableRow`].
-    pub fn align_x(mut self, alignment: Align) -> Self {
+    pub fn align_x(mut self, alignment: Horizontal) -> Self {
         self.horizontal_alignment = alignment;
         self
     }
 
     /// Sets the content alignment for the vertical axis of the [`TableRow`].
-    pub fn align_y(mut self, alignment: Align) -> Self {
+    pub fn align_y(mut self, alignment: Vertical) -> Self {
         self.vertical_alignment = alignment;
         self
     }
@@ -174,19 +174,19 @@ where
         )
     }
 
-    fn hash_layout(&self, state: &mut Hasher) {
-        struct Marker;
-        std::any::TypeId::of::<Marker>().hash(state);
-
-        self.padding.hash(state);
-        self.width.hash(state);
-        self.height.hash(state);
-        self.max_width.hash(state);
-        self.max_height.hash(state);
-        self.inner_row_height.hash(state);
-
-        self.content.hash_layout(state);
-    }
+    // fn hash_layout(&self, state: &mut Hasher) {
+    //     struct Marker;
+    //     std::any::TypeId::of::<Marker>().hash(state);
+    //
+    //     self.padding.hash(state);
+    //     self.width.hash(state);
+    //     self.height.hash(state);
+    //     self.max_width.hash(state);
+    //     self.max_height.hash(state);
+    //     self.inner_row_height.hash(state);
+    //
+    //     self.content.hash_layout(state);
+    // }
 
     fn on_event(
         &mut self,
@@ -194,7 +194,6 @@ where
         layout: Layout<'_>,
         cursor_position: Point,
         renderer: &Renderer,
-        clipboard: &mut dyn Clipboard,
         messages: &mut Vec<Message>,
     ) -> event::Status {
         let status_from_content = self.content.on_event(
@@ -202,7 +201,6 @@ where
             layout.children().next().unwrap(),
             cursor_position,
             renderer,
-            clipboard,
             messages,
         );
         match status_from_content {

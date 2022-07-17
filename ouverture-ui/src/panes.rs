@@ -1,7 +1,7 @@
 use futures_core::stream::Stream;
 use iced::{
-    button, executor, keyboard, pane_grid, scrollable, Align, Application, Button, Clipboard,
-    Column, Command, Container, Element, HorizontalAlignment, Length, PaneGrid, Row, Scrollable,
+    alignment::Horizontal, button, executor, keyboard, pane_grid, scrollable, Alignment,
+    Application, Button, Column, Command, Container, Element, Length, PaneGrid, Row, Scrollable,
     Text,
 };
 use std::sync::Arc;
@@ -13,6 +13,7 @@ pub struct Panes {
     theme: style::Theme,
 }
 use crate::style;
+use crate::style::stylesheet::*;
 use crate::Message;
 use log::{debug, trace, warn};
 use ouverture_core::server::Reply;
@@ -71,7 +72,7 @@ impl Application for Panes {
         String::from("Pane grid - Iced")
     }
 
-    fn update(&mut self, message: Message, clipboard: &mut Clipboard) -> Command<Message> {
+    fn update(&mut self, message: Message) -> Command<Message> {
         use Message::*;
         match message {
             Split(axis, pane) => {
@@ -181,7 +182,7 @@ impl Application for Panes {
                     .as_any_mut()
                     .downcast_mut::<list::List>()
                     .unwrap();
-                return list.update(RefreshList(pane), clipboard);
+                return list.update(RefreshList(pane));
             }
             ResizeColumn(pane, event) => {
                 let mut list: &mut list::List = self
@@ -191,14 +192,14 @@ impl Application for Panes {
                     .as_any_mut()
                     .downcast_mut::<list::List>()
                     .unwrap();
-                return list.update(ResizeColumn(pane, event), clipboard);
+                return list.update(ResizeColumn(pane, event));
             }
 
             ChildMessage(msg) => {
                 let command = Command::batch(
                     self.panes
                         .iter_mut()
-                        .map(|(p, s)| s.update(ChildMessage(msg), clipboard)),
+                        .map(|(p, s)| s.update(ChildMessage(msg))),
                 );
                 debug!("passing message to children");
                 return command;
@@ -225,7 +226,7 @@ impl Application for Panes {
             debug!("updating view in panes");
             pane_grid::Content::new(content.view(pane, total_panes))
                 .title_bar(title_bar)
-                .style(theme)
+                .style(NormalBackgroundContainer(theme))
         })
         .width(Length::Fill)
         .height(Length::Fill)
@@ -259,7 +260,7 @@ fn handle_hotkey(key_code: keyboard::KeyCode) -> Option<Message> {
 
 pub trait Content {
     fn view(&mut self, pane: pane_grid::Pane, total_panes: usize) -> Element<Message>;
-    fn update(&mut self, message: Message, clipboard: &mut Clipboard) -> Command<Message> {
+    fn update(&mut self, message: Message) -> Command<Message> {
         Command::none()
     }
     fn as_any(&self) -> &dyn Any;
@@ -317,13 +318,13 @@ impl Content for Editor {
                 state,
                 Text::new(label)
                     .width(Length::Fill)
-                    .horizontal_alignment(HorizontalAlignment::Center)
+                    .horizontal_alignment(Horizontal::Center)
                     .size(16),
             )
             .width(Length::Fill)
             .padding(8)
             .on_press(message)
-            .style(style)
+            .style(NormalTextButton(style))
         };
 
         let mut controls = Column::new()
@@ -367,13 +368,13 @@ impl Content for Editor {
         let content = Scrollable::new(scroll)
             .width(Length::Fill)
             .spacing(10)
-            .align_items(iced::Align::Start);
+            .align_items(Alignment::Start);
 
         let c = Column::new()
             .padding(2)
             .push(controls)
             .push(content)
-            .align_items(Align::Start);
+            .align_items(Alignment::Start);
 
         Container::new(c)
             .width(Length::Fill)

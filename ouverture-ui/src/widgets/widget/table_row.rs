@@ -2,30 +2,30 @@
 
 pub use crate::widgets::style::table_row::{Style, StyleSheet};
 use iced_native::{
-    event, layout, mouse, overlay, Align, Clipboard, Element, Event, Hasher, Layout, Length, Point,
-    Rectangle, Widget,
+    alignment, event, layout, mouse, overlay, renderer, Alignment, Element, Event, Hasher, Layout,
+    Length, Point, Rectangle, Widget,
 };
 
 use std::hash::Hash;
 
 #[allow(missing_debug_implementations)]
-pub struct TableRow<'a, Message, Renderer: self::Renderer> {
+pub struct TableRow<'a, Message, Renderer: renderer::Renderer> {
     padding: u16,
     width: Length,
     height: Length,
     max_width: u32,
     max_height: u32,
     inner_row_height: u32,
-    horizontal_alignment: Align,
-    vertical_alignment: Align,
-    style: Renderer::Style,
+    horizontal_alignment: alignment::Horizontal,
+    vertical_alignment: alignment::Vertical,
+    // style: Renderer::Style,
     content: Element<'a, Message, Renderer>,
     on_press: Option<Box<dyn Fn(Event) -> Message + 'a>>,
 }
 
 impl<'a, Message, Renderer> TableRow<'a, Message, Renderer>
 where
-    Renderer: 'a + self::Renderer,
+    Renderer: renderer::Renderer,
     Message: 'a,
 {
     /// Creates an empty [`TableRow`].
@@ -40,17 +40,17 @@ where
             max_width: u32::MAX,
             max_height: u32::MAX,
             inner_row_height: u32::MAX,
-            horizontal_alignment: Align::Start,
-            vertical_alignment: Align::Start,
-            style: Renderer::Style::default(),
+            horizontal_alignment: alignment::Horizontal::Left,
+            vertical_alignment: alignment::Horizontal::Left,
+            // style: Renderer::Style::default(),
             content: content.into(),
             on_press: None,
         }
     }
-    pub fn style(mut self, style: impl Into<<Renderer as self::Renderer>::Style>) -> Self {
-        self.style = style.into();
-        self
-    }
+    // pub fn style(mut self, style: impl Into<<Renderer as self::Renderer>::Style>) -> Self {
+    //     self.style = style.into();
+    //     self
+    // }
 
     /// Sets the width of the [`TableRow`].
     pub fn width(mut self, width: Length) -> Self {
@@ -83,26 +83,26 @@ where
     }
 
     /// Sets the content alignment for the horizontal axis of the [`TableRow`].
-    pub fn align_x(mut self, alignment: Align) -> Self {
+    pub fn align_x(mut self, alignment: alignment::Horizontal) -> Self {
         self.horizontal_alignment = alignment;
         self
     }
 
     /// Sets the content alignment for the vertical axis of the [`TableRow`].
-    pub fn align_y(mut self, alignment: Align) -> Self {
+    pub fn align_y(mut self, alignment: alignment::Vertical) -> Self {
         self.vertical_alignment = alignment;
         self
     }
 
     /// Centers the contents in the horizontal axis of the [`TableRow`].
     pub fn center_x(mut self) -> Self {
-        self.horizontal_alignment = Align::Center;
+        self.horizontal_alignment = alignment::Horizontal::Center;
         self
     }
 
     /// Centers the contents in the vertical axis of the [`TableRow`].
     pub fn center_y(mut self) -> Self {
-        self.vertical_alignment = Align::Center;
+        self.vertical_alignment = alignment::Vertical::Center;
         self
     }
 
@@ -118,7 +118,7 @@ where
 
 impl<'a, Message, Renderer> Widget<Message, Renderer> for TableRow<'a, Message, Renderer>
 where
-    Renderer: 'a + self::Renderer,
+    Renderer: 'a + renderer::Renderer,
     Message: 'a,
 {
     fn width(&self) -> Length {
@@ -150,7 +150,6 @@ where
     fn draw(
         &self,
         renderer: &mut Renderer,
-        defaults: &Renderer::Defaults,
         layout: Layout<'_>,
         cursor_position: Point,
         viewport: &Rectangle,
@@ -162,9 +161,8 @@ where
             width: bounds.width,
             height: self.inner_row_height as f32,
         };
-        self::Renderer::draw(
+        renderer::Renderer::draw(
             renderer,
-            defaults,
             layout,
             cursor_position,
             &self.style,
@@ -174,19 +172,19 @@ where
         )
     }
 
-    fn hash_layout(&self, state: &mut Hasher) {
-        struct Marker;
-        std::any::TypeId::of::<Marker>().hash(state);
-
-        self.padding.hash(state);
-        self.width.hash(state);
-        self.height.hash(state);
-        self.max_width.hash(state);
-        self.max_height.hash(state);
-        self.inner_row_height.hash(state);
-
-        self.content.hash_layout(state);
-    }
+    // fn hash_layout(&self, state: &mut Hasher) {
+    //     struct Marker;
+    //     std::any::TypeId::of::<Marker>().hash(state);
+    //
+    //     self.padding.hash(state);
+    //     self.width.hash(state);
+    //     self.height.hash(state);
+    //     self.max_width.hash(state);
+    //     self.max_height.hash(state);
+    //     self.inner_row_height.hash(state);
+    //
+    //     self.content.hash_layout(state);
+    // }
 
     fn on_event(
         &mut self,
@@ -194,7 +192,6 @@ where
         layout: Layout<'_>,
         cursor_position: Point,
         renderer: &Renderer,
-        clipboard: &mut dyn Clipboard,
         messages: &mut Vec<Message>,
     ) -> event::Status {
         let status_from_content = self.content.on_event(
@@ -202,7 +199,6 @@ where
             layout.children().next().unwrap(),
             cursor_position,
             renderer,
-            clipboard,
             messages,
         );
         match status_from_content {
@@ -233,27 +229,25 @@ where
     }
 }
 
-pub trait Renderer: iced_native::Renderer {
+pub trait Renderer: iced_native::renderer::Renderer {
     type Style: Default;
     #[allow(clippy::too_many_arguments)]
     fn draw<Message>(
         &mut self,
-        defaults: &Self::Defaults,
         layout: Layout<'_>,
         cursor_position: Point,
-        style: &Self::Style,
+        // style: &Self::Style,
         content: &Element<'_, Message, Self>,
         viewport: &Rectangle,
         custom_bounds: &Rectangle,
     ) -> Self::Output;
 }
 
-impl<'a, Message, Renderer> From<TableRow<'a, Message, Renderer>> for Element<'a, Message, Renderer>
+impl<'a, Message, Renderer> Into<Element<'a, Message, Renderer>> for TableRow<'a>
 where
-    Renderer: 'a + self::Renderer,
-    Message: 'a,
+    Renderer: renderer::Renderer,
 {
-    fn from(table_row: TableRow<'a, Message, Renderer>) -> Element<'a, Message, Renderer> {
-        Element::new(table_row)
+    fn into(self) -> Element<'a, Message, Renderer> {
+        Element::new(self)
     }
 }

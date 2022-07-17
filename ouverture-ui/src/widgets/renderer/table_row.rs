@@ -2,7 +2,7 @@ use crate::widgets::style::table_row::StyleSheet;
 
 use crate::widgets::widget::table_row;
 use iced_graphics::{Backend, Primitive, Renderer};
-use iced_native::{mouse, Background, Color, Element, Layout, Point, Rectangle};
+use iced_native::{mouse, renderer, Background, Color, Element, Layout, Point, Rectangle};
 
 impl<B> table_row::Renderer for Renderer<B>
 where
