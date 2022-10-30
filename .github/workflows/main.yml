@@ -11,6 +11,10 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
+  todo_to_issue:
+    - name: TODO to Issue
+      uses: alstr/todo-to-issue-action@v4
+
   format:
     name: Formatting check
     runs-on: ubuntu-latest
@@ -24,6 +28,7 @@ jobs:
       - uses: mbrobbel/rustfmt-check@master
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
+
   build:
     name : Build
 
@@ -64,7 +69,7 @@ jobs:
     #   run: cargo test --test integration
 
   unused-dependencies:
-    name: unused dependencies
+    name: Unused dependencies
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -88,6 +93,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+      - uses: Swatinem/rust-cache@v1
 
       - name: Install Rust
         run: rustup toolchain install nightly --component llvm-tools-preview
@@ -112,7 +118,7 @@ jobs:
 
 
   rust-clippy-analyze:
-    name: Run rust-clippy analyzing
+    name: Clippy analyze
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -128,6 +134,8 @@ jobs:
           toolchain: stable
           components: clippy
           override: true
+
+      - uses: Swatinem/rust-cache@v1
 
       - name: Install required cargo
         run: cargo install clippy-sarif sarif-fmt

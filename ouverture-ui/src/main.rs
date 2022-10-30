@@ -38,18 +38,27 @@ fn main() -> iced::Result {
     }
     .unwrap();
     debug!("Opts = {:?}", opts);
-    let config = match opts.config {
-        None => Config::default(),
-        Some(path) => Config::new_from_file(&path).unwrap(),
-    };
+    // let config = match opts.config.clone() {
+    //     None => Config::default(),
+    //     Some(path) => Config::new_from_file(&path).unwrap(),
+    // };
 
-    Ouverture::run(Settings::default())
+    Ouverture::run(Settings::with_flags(opts))
 }
 
 #[derive(Default)]
 struct Ouverture {
     theme: style::Theme,
     panes: panes::Panes,
+}
+
+impl Ouverture {
+    fn with_theme(theme: style::Theme) -> Self {
+        Ouverture {
+            theme,
+            panes: panes::Panes::with_theme(theme),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -87,17 +96,23 @@ pub enum Message {
     IntoList(pane_grid::Pane),
     // // List message
     // Scrolled(f32),
-    // RefreshList(pane_grid::Pane),
-    // ResizeColumn(pane_grid::Pane, header::ResizeEvent),
-    // RowCliked(usize),
 }
 
 impl<'a> Application for Ouverture {
     type Message = Message;
     type Executor = iced_futures::backend::native::tokio::Executor;
-    type Flags = ();
+    type Flags = Opt;
 
-    fn new(_flags: ()) -> (Self, Command<Message>) {
+    fn new(_flags: Self::Flags) -> (Self, Command<Message>) {
+        // check for matching builtin themes
+        if let Some(theme_str) = _flags.theme {
+            for builtin_theme in style::Theme::all() {
+                if theme_str.to_lowercase() == builtin_theme.0 {
+                    return (Self::with_theme(builtin_theme.1), Command::none());
+                }
+            }
+        }
+
         (Self::default(), Command::none())
     }
 

@@ -12,6 +12,10 @@ pub struct Opt {
     #[structopt(long = "log-destination")]
     pub log_destination: Option<PathBuf>,
 
+    /// Theme
+    #[structopt(long = "theme")]
+    pub theme: Option<String>,
+
     /// Config path
     #[structopt(short, long)]
     pub config: Option<PathBuf>,

@@ -21,6 +21,7 @@ use std::any::Any;
 
 mod control_bar;
 // pub mod list;
+mod list;
 mod menu;
 
 #[derive(Debug, Clone, Copy)]
@@ -29,8 +30,8 @@ pub enum PaneMessage {
     Refresh(pane_grid::Pane),
 }
 
-impl Default for Panes {
-    fn default() -> Self {
+impl Panes {
+    pub fn with_theme(theme: style::Theme) -> Self {
         let a: Box<dyn Content> = Box::new(Editor::new(0, style::Theme::default()));
         let b: Box<dyn Content> = Box::new(control_bar::ControlBar::new(style::Theme::default()));
 
@@ -50,8 +51,14 @@ impl Default for Panes {
             panes,
             panes_created: 1,
             focus: None,
-            theme: style::Theme::default(),
+            theme,
         }
+    }
+}
+
+impl Default for Panes {
+    fn default() -> Self {
+        Self::with_theme(style::Theme::default())
     }
 }
 
@@ -143,26 +150,24 @@ impl Application for Panes {
                 }
                 self.panes.close(&pane);
             }
-            // IntoList(pane) => {
-            //     let list = list::List::new(self.theme);
-            //     let result = self
-            //         .panes
-            //         .split(pane_grid::Axis::Horizontal, &pane, Box::new(list));
-            //
-            //     let new_pane = {
-            //         if let Some((new_pane, _)) = result {
-            //             self.focus = Some(new_pane);
-            //             self.panes.close(&pane);
-            //             new_pane
-            //         } else {
-            //             warn!("failed to close pane, keeping current one");
-            //             pane
-            //         }
-            //     };
-            //     debug!("transformed pane into list");
-            //     return async move { ChildMessage(PaneMessage::Refresh(new_pane)) }.into();
-            // }
-            //
+            IntoList(pane) => {
+                let list = list::List::new(self.theme);
+                let result = self
+                    .panes
+                    .split(pane_grid::Axis::Horizontal, &pane, Box::new(list));
+
+                let new_pane = {
+                    if let Some((new_pane, _)) = result {
+                        self.focus = Some(new_pane);
+                        self.panes.close(&pane);
+                        new_pane
+                    } else {
+                        warn!("failed to close pane, keeping current one");
+                        pane
+                    }
+                };
+            }
+
             IntoControlBar(pane) => {
                 let menu = control_bar::ControlBar::new(self.theme);
                 let result = self
