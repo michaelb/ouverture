@@ -156,15 +156,12 @@ impl Application for Panes {
                     .panes
                     .split(pane_grid::Axis::Horizontal, &pane, Box::new(list));
 
-                let new_pane = {
-                    if let Some((new_pane, _)) = result {
-                        self.focus = Some(new_pane);
-                        self.panes.close(&pane);
-                        new_pane
-                    } else {
-                        warn!("failed to close pane, keeping current one");
-                        pane
-                    }
+                if let Some((new_pane, _)) = result {
+                    self.focus = Some(new_pane);
+                    self.panes.close(&pane);
+                    return Command::single(AskRefreshList(new_pane).into());
+                } else {
+                    warn!("failed to close pane, keeping current one");
                 };
             }
 
@@ -179,16 +176,26 @@ impl Application for Panes {
                 }
                 self.panes.close(&pane);
             }
-            // RefreshList(pane) => {
-            //     let mut list: &mut list::List = self
-            //         .panes
-            //         .get_mut(&pane)
-            //         .unwrap()
-            //         .as_any_mut()
-            //         .downcast_mut::<list::List>()
-            //         .unwrap();
-            //     return list.update(RefreshList(pane));
-            // }
+            AskRefreshList(pane) => {
+                let mut list: &mut list::List = self
+                    .panes
+                    .get_mut(&pane)
+                    .unwrap()
+                    .as_any_mut()
+                    .downcast_mut::<list::List>()
+                    .unwrap();
+                return list.update(AskRefreshList(pane));
+            }
+            ReceivedNewList(pane, reply) => {
+                let mut list: &mut list::List = self
+                    .panes
+                    .get_mut(&pane)
+                    .unwrap()
+                    .as_any_mut()
+                    .downcast_mut::<list::List>()
+                    .unwrap();
+                return list.update(ReceivedNewList(pane, reply));
+            }
             // ResizeColumn(pane, event) => {
             //     let mut list: &mut list::List = self
             //         .panes

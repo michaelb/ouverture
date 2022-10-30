@@ -2,6 +2,8 @@ use iced::{
     executor, pane_grid, Alignment, Application, Column, Command, Container, Element, Length, Row,
     Settings, Text,
 };
+
+use iced_native::command::Action;
 mod opt;
 pub mod panes;
 pub mod style;
@@ -15,6 +17,8 @@ use structopt::StructOpt;
 
 use log::LevelFilter::*;
 use style::stylesheet::*;
+
+use std::rc::Rc;
 
 use log::{debug, info, warn};
 // use panes::list::ColumnKey;
@@ -60,8 +64,10 @@ impl Ouverture {
         }
     }
 }
+unsafe impl Send for Message {}
+unsafe impl Sync for Message {}
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 pub enum Message {
     Nothing,
 
@@ -94,8 +100,16 @@ pub enum Message {
     IntoControlBar(pane_grid::Pane),
     IntoSearchBar(pane_grid::Pane),
     IntoList(pane_grid::Pane),
+
     // // List message
-    // Scrolled(f32),
+    AskRefreshList(pane_grid::Pane),
+    ReceivedNewList(pane_grid::Pane, Rc<ouverture_core::server::Reply>),
+}
+
+impl Into<Action<Message>> for Message {
+    fn into(self) -> Action<Message> {
+        Action::Future(Box::pin(async { self }))
+    }
 }
 
 impl<'a> Application for Ouverture {

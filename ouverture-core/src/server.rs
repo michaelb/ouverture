@@ -11,6 +11,7 @@ use tokio::net::{TcpListener, TcpStream};
 use crate::config::Config;
 use crate::library::*;
 use crate::music::song::Song;
+use color_eyre::eyre::eyre;
 use color_eyre::Result;
 
 use log::{debug, error, info, trace, warn};
@@ -47,7 +48,7 @@ impl Server {
                         Ok(n) if n == 0 => break,
                         Ok(n) => n,
                         Err(e) => {
-                            error!("failed to read from socket; err = {:?}", e);
+                            debug!("Client disconnected : {}", e);
                             break;
                         }
                     };
@@ -117,7 +118,7 @@ impl Server {
     pub async fn send_wait(
         message: &Command,
         address: &str,
-    ) -> Result<(), Box<dyn Error + Send + Sync>> {
+    ) -> Result<Reply, Box<dyn Error + Send + Sync>> {
         let encoded: Vec<u8> = message.prepare_query()?;
         let mut stream = TcpStream::connect(address).await?;
         stream.write_all(&encoded).await?;
@@ -142,12 +143,16 @@ impl Server {
             trace!("res from socket = {:?}", res);
 
             let decoded_reply = bincode::deserialize::<Reply>(&payload);
-            if let Ok(Reply::Done) = decoded_reply {
-                break;
+            if let Ok(ok_reply) = decoded_reply {
+                //only return the meaningful value
+                match ok_reply {
+                    Reply::Received(_) => continue,
+                    Reply::Done => continue,
+                    _ => return Ok(ok_reply),
+                }
             }
         }
-
-        Ok(())
+        Err("Communication with the server failed".into())
     }
 
     pub async fn send<'a>(
@@ -206,7 +211,7 @@ impl Server {
 }
 
 #[non_exhaustive]
-#[derive(Display, Debug, Serialize, Deserialize, EnumString, EnumIter)]
+#[derive(Display, Debug, Serialize, Deserialize, EnumString, EnumIter, Clone)]
 pub enum Command {
     // "Music" commands
     Play(Option<String>),
