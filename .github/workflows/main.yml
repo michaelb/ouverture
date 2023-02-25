@@ -11,9 +11,10 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  todo_to_issue:
-    - name: TODO to Issue
-      uses: alstr/todo-to-issue-action@v4
+  # todo_to_issue:
+  #   name: TODO to Issue
+  #   steps:
+  #     - uses: alstr/todo-to-issue-action@v4
 
   format:
     name: Formatting check
