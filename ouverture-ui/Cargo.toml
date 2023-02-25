@@ -35,3 +35,8 @@ structopt = "0.3.26"
 futures-core="0.3.21"
 async-stream = "0.3.3"
 futures-util="0.3.21"
+
+fixedstr = "0.2.9"
+
+color-eyre = "0.6"
+toml = "0.5.8"

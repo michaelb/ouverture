@@ -1,5 +1,6 @@
-use iced::widget::{button, column, container, pane_grid, text};
+use iced::widget::{button, column, container, pane_grid, text, };
 use iced::{Element, Length};
+use iced::theme::Theme;
 
 use super::Content;
 use crate::Message;
@@ -29,11 +30,8 @@ impl Menu {
     }
 
     fn view(&self) -> Element<Message> {
-        let Menu {
-            currently_playing: _,
-        } = self;
 
-        let controls = column![
+      let controls = column![
             button(text("Home")).on_press(Message::Home),
             button(text("Library")).on_press(Message::Library),
             button(text("Settings")).on_press(Message::Settings)
