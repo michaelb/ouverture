@@ -1,13 +1,13 @@
 use iced::{Application, Command, Element, Length, Settings};
 
-use iced::theme::{Theme};
+use iced::theme::Theme;
 
 use iced::widget::{container, pane_grid};
 
 use iced_native::command::Action;
+mod config;
 mod opt;
 mod style;
-mod config;
 use config::Config;
 use style::ThemeType;
 pub mod panes;
@@ -16,11 +16,10 @@ use opt::Opt;
 
 use ouverture_core::logger::{setup_logger, LogDestination::*};
 
-
 use structopt::StructOpt;
 
-use std::convert::Into;
 use log::LevelFilter::*;
+use std::convert::Into;
 use std::path::{Path, PathBuf};
 
 use std::rc::Rc;
@@ -58,19 +57,20 @@ struct Ouverture {
 
 impl Ouverture {
     fn from_config(path: Option<PathBuf>) -> Self {
-        let mut ouverture:Ouverture = Default::default();
+        let mut ouverture: Ouverture = Default::default();
         if let Some(config_path) = path {
             info!("Using custom config path: {config_path:?}");
             let read_config = Config::new(&config_path);
             if let Ok(c) = read_config {
                 ouverture.theme = ThemeType::from(c.theme.into()).into();
             } else {
-                warn!("Custom configuration is incomplete and couldn't be applied: {read_config:?}");
+                warn!(
+                    "Custom configuration is incomplete and couldn't be applied: {read_config:?}"
+                );
             }
         }
         return ouverture;
     }
-
 }
 
 unsafe impl Send for Message {}

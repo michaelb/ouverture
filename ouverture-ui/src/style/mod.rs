@@ -3,8 +3,8 @@ mod builtin;
 use builtin::BuiltinTheme;
 use iced::theme::Theme;
 
-use log::warn;
 use fixedstr::str32;
+use log::warn;
 
 #[derive(Debug, Clone)]
 pub struct ThemeType(str32);

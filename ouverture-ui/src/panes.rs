@@ -1,11 +1,9 @@
-
 use iced::executor;
 use iced::keyboard;
-use iced::theme::{Theme};
+use iced::theme::Theme;
 use iced::widget::pane_grid::{self, PaneGrid};
 use iced::widget::{button, column, container, scrollable, text};
 use iced::{Application, Command, Element, Length};
-
 
 pub struct Panes {
     panes: pane_grid::State<Box<dyn Content>>,

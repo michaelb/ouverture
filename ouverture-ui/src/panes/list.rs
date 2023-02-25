@@ -84,7 +84,6 @@ impl List {
 
     pub fn ask_refresh_list(&mut self, pane: pane_grid::Pane) -> Command<Message> {
         let address = "127.0.0.1:6603";
-        
 
         Command::single(Action::Future(Box::pin(async move {
             let reply = Server::send_wait(&ServerCommand::List(None), address)
