@@ -25,7 +25,7 @@ pub async fn setup_db(config: Config) -> Result<PgEmbed> {
     let pg_settings = PgSettings {
         // Where to store the postgresql database
         database_dir: PathBuf::from(config.database_dir),
-        port: config.database_port as i16,
+        port: config.database_port as u16,
         user: "ouverture".to_string(),
         password: "ouverture".to_string(),
 
@@ -47,6 +47,7 @@ pub async fn setup_db(config: Config) -> Result<PgEmbed> {
         version: PG_V13,
         ..Default::default()
     };
+    info!("database fetch settings: host = {:?}, platform = {:?}", fetch_settings.host, fetch_settings.platform());
 
     let mut pg = PgEmbed::new(pg_settings, fetch_settings)
         .await

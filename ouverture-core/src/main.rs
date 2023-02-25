@@ -85,7 +85,7 @@ async fn handle_signals(signals: Signals, address: String, first_signal: Arc<Mut
                 // Shutdown the system;
                 if *first_signal.lock().unwrap() {
                     *first_signal.lock().unwrap() = false;
-                    Server::send_wait(&Stop, &address).await.unwrap();
+                    let _ = Server::send_wait(&Stop, &address).await;
                 } else {
                     std::process::exit(signal);
                 }

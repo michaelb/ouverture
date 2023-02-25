@@ -13,5 +13,6 @@ db
 
 
 local/*
+dev/*
 
 .env
