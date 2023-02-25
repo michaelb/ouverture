@@ -1,5 +1,5 @@
-use iced::widget::{button, column, pane_grid, row, scrollable, text, container};
-use iced::{alignment::Horizontal, Alignment, Command, Element, Length};
+use iced::widget::{column, container, pane_grid, row, scrollable, text};
+use iced::{Command, Element, Length};
 use log::debug;
 
 use super::Content;
@@ -37,7 +37,7 @@ impl Content for List {
         let List { content } = self;
         let mut rows = column![];
         for e in content {
-            let r = row![text(e.title.clone()),  text(e.artist.clone())]
+            let r = row![text(e.title.clone()), text(e.artist.clone())]
                 .spacing(5)
                 .width(150);
             rows = rows.push(r);
@@ -84,15 +84,15 @@ impl List {
 
     pub fn ask_refresh_list(&mut self, pane: pane_grid::Pane) -> Command<Message> {
         let address = "127.0.0.1:6603";
-        let cmd_ui = Command::single(Action::Future(Box::pin(async move {
+        
+
+        Command::single(Action::Future(Box::pin(async move {
             let reply = Server::send_wait(&ServerCommand::List(None), address)
                 .await
                 .unwrap();
             debug!("asked for list refresh");
             Message::ReceivedNewList(pane, Rc::new(reply))
-        })));
-
-        return cmd_ui;
+        })))
     }
 
     pub fn got_refresh_list(&mut self, reply: &ouverture_core::server::Reply) {

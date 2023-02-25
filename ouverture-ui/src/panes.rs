@@ -1,11 +1,11 @@
-use futures_core::stream::Stream;
+
 use iced::executor;
 use iced::keyboard;
-use iced::theme::{self, Theme};
+use iced::theme::{Theme};
 use iced::widget::pane_grid::{self, PaneGrid};
-use iced::widget::{button, column, scrollable, text, container};
-use iced::{alignment::Horizontal, Alignment, Application, Command, Element, Length};
-use std::sync::Arc;
+use iced::widget::{button, column, container, scrollable, text};
+use iced::{Application, Command, Element, Length};
+
 
 pub struct Panes {
     panes: pane_grid::State<Box<dyn Content>>,
@@ -14,8 +14,8 @@ pub struct Panes {
 }
 
 use crate::Message;
-use log::{debug, trace, warn};
-use ouverture_core::server::Reply;
+use log::{debug, warn};
+
 use std::any::Any;
 
 mod control_bar;
@@ -168,7 +168,7 @@ impl Application for Panes {
                 self.panes.close(&pane);
             }
             AskRefreshList(pane) => {
-                let mut list: &mut list::List = self
+                let list: &mut list::List = self
                     .panes
                     .get_mut(&pane)
                     .unwrap()
@@ -178,7 +178,7 @@ impl Application for Panes {
                 return list.update(AskRefreshList(pane));
             }
             ReceivedNewList(pane, reply) => {
-                let mut list: &mut list::List = self
+                let list: &mut list::List = self
                     .panes
                     .get_mut(&pane)
                     .unwrap()
@@ -201,7 +201,7 @@ impl Application for Panes {
                 let command = Command::batch(
                     self.panes
                         .iter_mut()
-                        .map(|(p, s)| s.update(ChildMessage(msg))),
+                        .map(|(_p, s)| s.update(ChildMessage(msg))),
                 );
                 debug!("passing message to children");
                 return command;
@@ -215,7 +215,7 @@ impl Application for Panes {
         let focus = self.focus;
         let total_panes = self.panes.len();
 
-        PaneGrid::new(&self.panes, |pane, content, is_maximized| {
+        PaneGrid::new(&self.panes, |pane, content, _is_maximized| {
             let is_focused = focus == Some(pane);
 
             let title_bar: pane_grid::TitleBar<Message> = if is_focused {
@@ -258,7 +258,7 @@ fn handle_hotkey(key_code: keyboard::KeyCode) -> Option<Message> {
 
 pub trait Content {
     fn view(&self, pane: pane_grid::Pane, total_panes: usize) -> Element<Message>;
-    fn update(&mut self, message: Message) -> Command<Message> {
+    fn update(&mut self, _message: Message) -> Command<Message> {
         Command::none()
     }
     fn as_any(&self) -> &dyn Any;
@@ -296,14 +296,14 @@ impl Content for Editor {
         //
         let mut controls = column![].spacing(5).max_width(150);
         controls = controls
-            .push(button(text("-")) .on_press(Message::Split(pane_grid::Axis::Horizontal, pane)))
+            .push(button(text("-")).on_press(Message::Split(pane_grid::Axis::Horizontal, pane)))
             .push(button(text("Menu")).on_press(Message::IntoMenu(pane)))
             .push(button(text("ControlBar")).on_press(Message::IntoControlBar(pane)))
             .push(button(text("List")).on_press(Message::IntoList(pane)))
-            .push(button( text("|")).on_press(Message::Split(pane_grid::Axis::Vertical, pane)));
+            .push(button(text("|")).on_press(Message::Split(pane_grid::Axis::Vertical, pane)));
 
         if total_panes > 1 {
-            controls = controls.push(button( text("x")).on_press( Message::Close(pane)));
+            controls = controls.push(button(text("x")).on_press(Message::Close(pane)));
         }
 
         container(scrollable(controls))

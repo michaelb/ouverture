@@ -1,7 +1,6 @@
-use iced::{
-    alignment::Horizontal, Element, Length};
+use iced::{Element, Length};
 
-use iced::widget::{ button, pane_grid, text , row, container};
+use iced::widget::{button, container, pane_grid, row, text};
 
 use super::Content;
 use crate::Message;
@@ -36,9 +35,9 @@ impl ControlBar {
 
         let controls = row![]
             .spacing(5)
-            .push(button( text("<-")).on_press( Message::Previous))
-            .push(button( text(">")).on_press( Message::Toggle))
-            .push(button( text("->")).on_press( Message::Next));
+            .push(button(text("<-")).on_press(Message::Previous))
+            .push(button(text(">")).on_press(Message::Toggle))
+            .push(button(text("->")).on_press(Message::Next));
 
         container(controls)
             .width(Length::Fill)

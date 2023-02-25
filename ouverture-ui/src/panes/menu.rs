@@ -1,5 +1,5 @@
-use iced::widget::{button, column, pane_grid, text, container};
-use iced::{alignment::Horizontal, Element, Length};
+use iced::widget::{button, column, container, pane_grid, text};
+use iced::{Element, Length};
 
 use super::Content;
 use crate::Message;

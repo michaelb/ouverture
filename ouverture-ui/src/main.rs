@@ -1,25 +1,25 @@
-use iced::{ executor, Application, Command, Element,  Length, Settings, };
+use iced::{Application, Command, Element, Length, Settings};
 
-use iced::theme::{self, Theme};
+use iced::theme::{Theme};
 
-use iced::widget::{pane_grid, container};
+use iced::widget::{container, pane_grid};
 
 use iced_native::command::Action;
 mod opt;
 pub mod panes;
 
 use opt::Opt;
-use ouverture_core::config::Config;
+
 use ouverture_core::logger::{setup_logger, LogDestination::*};
-use ouverture_core::music::song::Song;
-use ouverture_core::start;
+
+
 use structopt::StructOpt;
 
 use log::LevelFilter::*;
 
 use std::rc::Rc;
 
-use log::{debug, info, warn};
+use log::{debug};
 // use panes::list::ColumnKey;
 use panes::{Content, PaneMessage};
 
@@ -55,14 +55,8 @@ struct Ouverture {
     panes: panes::Panes,
 }
 
-impl Ouverture {
-    fn with_theme(theme: Theme) -> Self {
-        Ouverture {
-            theme,
-            panes: panes::Panes::new(),
-        }
-    }
-}
+impl Ouverture {}
+
 unsafe impl Send for Message {}
 unsafe impl Sync for Message {}
 
@@ -105,9 +99,9 @@ pub enum Message {
     ReceivedNewList(pane_grid::Pane, Rc<ouverture_core::server::Reply>),
 }
 
-impl Into<Action<Message>> for Message {
-    fn into(self) -> Action<Message> {
-        Action::Future(Box::pin(async { self }))
+impl From<Message> for Action<Message> {
+    fn from(val: Message) -> Self {
+        Action::Future(Box::pin(async { val }))
     }
 }
 

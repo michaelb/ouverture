@@ -47,7 +47,11 @@ pub async fn setup_db(config: Config) -> Result<PgEmbed> {
         version: PG_V13,
         ..Default::default()
     };
-    info!("database fetch settings: host = {:?}, platform = {:?}", fetch_settings.host, fetch_settings.platform());
+    info!(
+        "database fetch settings: host = {:?}, platform = {:?}",
+        fetch_settings.host,
+        fetch_settings.platform()
+    );
 
     let mut pg = PgEmbed::new(pg_settings, fetch_settings)
         .await
