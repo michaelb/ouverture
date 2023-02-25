@@ -1,19 +1,18 @@
 use futures_core::stream::Stream;
-use iced::{
-    alignment::Horizontal, button, executor, keyboard, pane_grid, scrollable, Alignment,
-    Application, Button, Column, Command, Container, Element, Length, PaneGrid, Row, Scrollable,
-    Text,
-};
+use iced::executor;
+use iced::keyboard;
+use iced::theme::{self, Theme};
+use iced::widget::pane_grid::{self, PaneGrid};
+use iced::widget::{button, column, scrollable, text, container};
+use iced::{alignment::Horizontal, Alignment, Application, Command, Element, Length};
 use std::sync::Arc;
 
 pub struct Panes {
     panes: pane_grid::State<Box<dyn Content>>,
     panes_created: usize,
     focus: Option<pane_grid::Pane>,
-    theme: style::Theme,
 }
-use crate::style;
-use crate::style::stylesheet::*;
+
 use crate::Message;
 use log::{debug, trace, warn};
 use ouverture_core::server::Reply;
@@ -31,9 +30,9 @@ pub enum PaneMessage {
 }
 
 impl Panes {
-    pub fn with_theme(theme: style::Theme) -> Self {
-        let a: Box<dyn Content> = Box::new(Editor::new(0, style::Theme::default()));
-        let b: Box<dyn Content> = Box::new(control_bar::ControlBar::new(style::Theme::default()));
+    pub fn new() -> Self {
+        let a: Box<dyn Content> = Box::new(Editor::new(0));
+        let b: Box<dyn Content> = Box::new(control_bar::ControlBar::new());
 
         let a_conf = Box::new(iced::widget::pane_grid::Configuration::Pane(a));
         let b_conf = Box::new(iced::widget::pane_grid::Configuration::Pane(b));
@@ -51,27 +50,23 @@ impl Panes {
             panes,
             panes_created: 1,
             focus: None,
-            theme,
         }
     }
 }
 
 impl Default for Panes {
     fn default() -> Self {
-        Self::with_theme(style::Theme::default())
+        Self::new()
     }
-}
-
-pub struct PaneFlags {
-    theme: style::Theme,
 }
 
 impl Application for Panes {
     type Message = Message;
     type Executor = executor::Default;
-    type Flags = PaneFlags;
+    type Flags = ();
+    type Theme = Theme;
 
-    fn new(flags: PaneFlags) -> (Self, Command<Message>) {
+    fn new(_flags: ()) -> (Self, Command<Message>) {
         (Panes::default(), Command::none())
     }
 
@@ -83,11 +78,9 @@ impl Application for Panes {
         use Message::*;
         match message {
             Split(axis, pane) => {
-                let result = self.panes.split(
-                    axis,
-                    &pane,
-                    Box::new(Editor::new(self.panes_created, self.theme)),
-                );
+                let result =
+                    self.panes
+                        .split(axis, &pane, Box::new(Editor::new(self.panes_created)));
 
                 if let Some((pane, _)) = result {
                     self.focus = Some(pane);
@@ -97,11 +90,9 @@ impl Application for Panes {
             }
             SplitFocused(axis) => {
                 if let Some(pane) = self.focus {
-                    let result = self.panes.split(
-                        axis,
-                        &pane,
-                        Box::new(Editor::new(self.panes_created, self.theme)),
-                    );
+                    let result =
+                        self.panes
+                            .split(axis, &pane, Box::new(Editor::new(self.panes_created)));
 
                     if let Some((pane, _)) = result {
                         self.focus = Some(pane);
@@ -140,7 +131,7 @@ impl Application for Panes {
                 }
             }
             IntoMenu(pane) => {
-                let menu = menu::Menu::new(self.theme);
+                let menu = menu::Menu::new();
                 let result = self
                     .panes
                     .split(pane_grid::Axis::Horizontal, &pane, Box::new(menu));
@@ -151,7 +142,7 @@ impl Application for Panes {
                 self.panes.close(&pane);
             }
             IntoList(pane) => {
-                let list = list::List::new(self.theme);
+                let list = list::List::new();
                 let result = self
                     .panes
                     .split(pane_grid::Axis::Horizontal, &pane, Box::new(list));
@@ -166,7 +157,7 @@ impl Application for Panes {
             }
 
             IntoControlBar(pane) => {
-                let menu = control_bar::ControlBar::new(self.theme);
+                let menu = control_bar::ControlBar::new();
                 let result = self
                     .panes
                     .split(pane_grid::Axis::Horizontal, &pane, Box::new(menu));
@@ -220,24 +211,20 @@ impl Application for Panes {
 
         Command::none()
     }
-
-    fn view(&mut self) -> Element<Message> {
+    fn view(&self) -> Element<Message> {
         let focus = self.focus;
         let total_panes = self.panes.len();
 
-        let theme = self.theme;
-        PaneGrid::new(&mut self.panes, |pane, content| {
+        PaneGrid::new(&self.panes, |pane, content, is_maximized| {
             let is_focused = focus == Some(pane);
 
             let title_bar: pane_grid::TitleBar<Message> = if is_focused {
-                pane_grid::TitleBar::new(Text::new("focused")).padding(10)
+                pane_grid::TitleBar::new(text("focused")).padding(10)
             } else {
-                pane_grid::TitleBar::new(Text::new("not focused")).padding(10)
+                pane_grid::TitleBar::new(text("not focused")).padding(10)
             };
             debug!("updating view in panes");
-            pane_grid::Content::new(content.view(pane, total_panes))
-                .title_bar(title_bar)
-                .style(NormalBackgroundContainer(theme))
+            pane_grid::Content::new(content.view(pane, total_panes)).title_bar(title_bar)
         })
         .width(Length::Fill)
         .height(Length::Fill)
@@ -270,7 +257,7 @@ fn handle_hotkey(key_code: keyboard::KeyCode) -> Option<Message> {
 }
 
 pub trait Content {
-    fn view(&mut self, pane: pane_grid::Pane, total_panes: usize) -> Element<Message>;
+    fn view(&self, pane: pane_grid::Pane, total_panes: usize) -> Element<Message>;
     fn update(&mut self, message: Message) -> Command<Message> {
         Command::none()
     }
@@ -280,29 +267,11 @@ pub trait Content {
 
 struct Editor {
     id: usize,
-    scroll: scrollable::State,
-    split_horizontally: button::State,
-    split_vertically: button::State,
-    into_menu: button::State,
-    into_controlbar: button::State,
-    into_list: button::State,
-    close: button::State,
-    theme: style::Theme,
 }
 
 impl Editor {
-    fn new(id: usize, theme: style::Theme) -> Self {
-        Editor {
-            id,
-            scroll: scrollable::State::new(),
-            split_horizontally: button::State::new(),
-            split_vertically: button::State::new(),
-            into_menu: button::State::new(),
-            into_controlbar: button::State::new(),
-            into_list: button::State::new(),
-            close: button::State::new(),
-            theme,
-        }
+    fn new(id: usize) -> Self {
+        Editor { id }
     }
 }
 impl Content for Editor {
@@ -312,82 +281,32 @@ impl Content for Editor {
     fn as_any_mut(&mut self) -> &mut dyn Any {
         self
     }
-    fn view(&mut self, pane: pane_grid::Pane, total_panes: usize) -> Element<Message> {
-        let Editor {
-            scroll,
-            split_horizontally,
-            split_vertically,
-            into_menu,
-            into_controlbar,
-            into_list,
-            close,
-            ..
-        } = self;
-
-        let button = |state, label, message, style| {
-            Button::new(
-                state,
-                Text::new(label)
-                    .width(Length::Fill)
-                    .horizontal_alignment(Horizontal::Center)
-                    .size(16),
-            )
-            .width(Length::Fill)
-            .padding(8)
-            .on_press(message)
-            .style(NormalTextButton(style))
-        };
-
-        let mut controls = Column::new()
-            .spacing(5)
-            .max_width(150)
-            .push(button(
-                split_horizontally,
-                "-",
-                Message::Split(pane_grid::Axis::Horizontal, pane),
-                self.theme,
-            ))
-            .push(button(
-                into_menu,
-                "Menu",
-                Message::IntoMenu(pane),
-                self.theme,
-            ))
-            .push(button(
-                into_controlbar,
-                "ControlBar",
-                Message::IntoControlBar(pane),
-                self.theme,
-            ))
-            .push(button(
-                into_list,
-                "List",
-                Message::IntoList(pane),
-                self.theme,
-            ))
-            .push(button(
-                split_vertically,
-                "|",
-                Message::Split(pane_grid::Axis::Vertical, pane),
-                self.theme,
-            ));
+    fn view(&self, pane: pane_grid::Pane, total_panes: usize) -> Element<Message> {
+        // let button = | label, message, style| {
+        //     button(
+        //         text(label)
+        //             .width(Length::Fill)
+        //             .horizontal_alignment(Horizontal::Center)
+        //             .size(16),
+        //     )
+        //     .width(Length::Fill)
+        //     .padding(8)
+        //     .on_press(message)
+        // };
+        //
+        let mut controls = column![].spacing(5).max_width(150);
+        controls = controls
+            .push(button(text("-")) .on_press(Message::Split(pane_grid::Axis::Horizontal, pane)))
+            .push(button(text("Menu")).on_press(Message::IntoMenu(pane)))
+            .push(button(text("ControlBar")).on_press(Message::IntoControlBar(pane)))
+            .push(button(text("List")).on_press(Message::IntoList(pane)))
+            .push(button( text("|")).on_press(Message::Split(pane_grid::Axis::Vertical, pane)));
 
         if total_panes > 1 {
-            controls = controls.push(button(close, "x", Message::Close(pane), self.theme));
+            controls = controls.push(button( text("x")).on_press( Message::Close(pane)));
         }
 
-        let content = Scrollable::new(scroll)
-            .width(Length::Fill)
-            .spacing(10)
-            .align_items(Alignment::Start);
-
-        let c = Column::new()
-            .padding(2)
-            .push(controls)
-            .push(content)
-            .align_items(Alignment::Start);
-
-        Container::new(c)
+        container(scrollable(controls))
             .width(Length::Fill)
             .height(Length::Fill)
             .padding(5)

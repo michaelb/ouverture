@@ -1,12 +1,8 @@
-use iced::{
-    alignment::Horizontal, button, pane_grid, scrollable, Alignment, Button, Column, Command,
-    Container, Element, Length, Row, Scrollable, Text,
-};
+use iced::widget::{button, column, pane_grid, row, scrollable, text, container};
+use iced::{alignment::Horizontal, Alignment, Command, Element, Length};
 use log::debug;
 
 use super::Content;
-use crate::style;
-use crate::style::stylesheet::*;
 use crate::Message;
 
 use iced_native::command::Action;
@@ -34,34 +30,22 @@ impl From<Song> for ListRow {
 
 pub struct List {
     content: Vec<ListRow>,
-    scroll: scrollable::State,
-    theme: style::Theme,
 }
 
 impl Content for List {
-    fn view(&mut self, _pane: pane_grid::Pane, _total_panes: usize) -> Element<Message> {
-        let List {
-            content,
-            scroll,
-            theme,
-        } = self;
-        let mut rows = Column::<Message>::new();
+    fn view(&self, _pane: pane_grid::Pane, _total_panes: usize) -> Element<Message> {
+        let List { content } = self;
+        let mut rows = column![];
         for e in content {
-            let r = Row::new()
+            let r = row![text(e.title.clone()),  text(e.artist.clone())]
                 .spacing(5)
-                .max_width(150)
-                .push(Text::new(e.title.clone()))
-                .push(Text::new(e.artist.clone()));
+                .width(150);
             rows = rows.push(r);
         }
 
-        let content = Scrollable::new(scroll)
-            .width(Length::Fill)
-            .spacing(10)
-            .push(rows)
-            .align_items(Alignment::Start);
+        let content = scrollable(rows);
 
-        Container::new(content)
+        container(content)
             .width(Length::Fill)
             .height(Length::Fill)
             .padding(5)
@@ -88,15 +72,13 @@ impl Content for List {
 }
 
 impl List {
-    pub fn new(theme: style::Theme) -> Self {
+    pub fn new() -> Self {
         List {
             content: vec![ListRow {
                 selected: false,
                 title: String::from("title"),
                 artist: String::from("artist"),
             }],
-            scroll: scrollable::State::new(),
-            theme,
         }
     }
 

@@ -18,12 +18,12 @@ path = "src/main.rs"
 [dependencies]
 ouverture-core = { version = "0.1.0", path = "../ouverture-core"}
 tokio = { version = "1.17.0", features = ["full"] }
-iced = {version = "0.4", features = ["debug"]}
-iced_futures = { version = "0.4.1", features = ["tokio"] }
-iced_native = { version = "0.5.1" }
-iced_graphics = { version = "0.3.1" }
-iced_core = { version = "0.5.0" }
-iced_wgpu = { version = "0.5.1" }
+iced = {version = "0.8.0", features = ["debug"]}
+iced_futures = { version = "0.6.0", features = ["tokio"] }
+iced_native = { version = "0.9.1" }
+iced_graphics = { version = "0.7.0" }
+iced_core = { version = "0.8.0" }
+iced_wgpu = { version = "0.9" }
 serde ="1.0"
 
 

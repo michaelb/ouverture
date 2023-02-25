@@ -1,12 +1,12 @@
-use iced::{
-    executor, pane_grid, Alignment, Application, Column, Command, Container, Element, Length, Row,
-    Settings, Text,
-};
+use iced::{ executor, Application, Command, Element,  Length, Settings, };
+
+use iced::theme::{self, Theme};
+
+use iced::widget::{pane_grid, container};
 
 use iced_native::command::Action;
 mod opt;
 pub mod panes;
-pub mod style;
 
 use opt::Opt;
 use ouverture_core::config::Config;
@@ -16,7 +16,6 @@ use ouverture_core::start;
 use structopt::StructOpt;
 
 use log::LevelFilter::*;
-use style::stylesheet::*;
 
 use std::rc::Rc;
 
@@ -52,15 +51,15 @@ fn main() -> iced::Result {
 
 #[derive(Default)]
 struct Ouverture {
-    theme: style::Theme,
+    theme: Theme,
     panes: panes::Panes,
 }
 
 impl Ouverture {
-    fn with_theme(theme: style::Theme) -> Self {
+    fn with_theme(theme: Theme) -> Self {
         Ouverture {
             theme,
-            panes: panes::Panes::with_theme(theme),
+            panes: panes::Panes::new(),
         }
     }
 }
@@ -72,7 +71,7 @@ pub enum Message {
     Nothing,
 
     // SliderChanged(f32),
-    ThemeChanged(style::Theme),
+    ThemeChanged(Theme),
 
     //Pane Messages
     Split(pane_grid::Axis, pane_grid::Pane),
@@ -116,17 +115,10 @@ impl<'a> Application for Ouverture {
     type Message = Message;
     type Executor = iced_futures::backend::native::tokio::Executor;
     type Flags = Opt;
+    type Theme = Theme;
 
     fn new(_flags: Self::Flags) -> (Self, Command<Message>) {
         // check for matching builtin themes
-        if let Some(theme_str) = _flags.theme {
-            for builtin_theme in style::Theme::all() {
-                if theme_str.to_lowercase() == builtin_theme.0 {
-                    return (Self::with_theme(builtin_theme.1), Command::none());
-                }
-            }
-        }
-
         (Self::default(), Command::none())
     }
 
@@ -148,15 +140,14 @@ impl<'a> Application for Ouverture {
         }
     }
 
-    fn view(&mut self) -> Element<Message> {
+    fn view(&self) -> Element<Message> {
         let panes = self.panes.view();
 
-        Container::new(panes)
+        container(panes)
             .width(Length::Fill)
             .height(Length::Fill)
             .center_x()
             .center_y()
-            .style(NormalBackgroundContainer(self.theme))
             .into()
     }
 }
