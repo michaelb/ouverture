@@ -12,6 +12,10 @@ use config::Config;
 use style::ThemeType;
 pub mod panes;
 
+use ouverture_core::music::song::Song;
+
+use panes::list;
+
 use opt::Opt;
 
 use ouverture_core::logger::{setup_logger, LogDestination::*};
@@ -92,10 +96,13 @@ pub enum Message {
     Resized(pane_grid::ResizeEvent),
     Close(pane_grid::Pane),
     CloseFocused,
+
     ChildMessage(PaneMessage),
 
     //ControlBar messages
     Toggle,
+    Play(Option<Song>),
+    Pause,
     Next,
     Previous,
 
@@ -111,8 +118,12 @@ pub enum Message {
     IntoList(pane_grid::Pane),
 
     // // List message
-    AskRefreshList(pane_grid::Pane),
-    ReceivedNewList(pane_grid::Pane, Rc<ouverture_core::server::Reply>),
+}
+
+impl From<PaneMessage> for Message {
+    fn from(pm: PaneMessage) -> Message {
+        Message::ChildMessage(pm)
+    }
 }
 
 impl From<Message> for Action<Message> {

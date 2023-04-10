@@ -17,17 +17,24 @@ use crate::Message;
 use log::{debug, warn};
 
 use std::any::Any;
+use std::rc::Rc;
 
 mod control_bar;
 // pub mod list;
-mod list;
+pub mod list;
 mod menu;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 pub enum PaneMessage {
     ServerReply(pane_grid::Pane),
     Refresh(pane_grid::Pane),
+
+    // for List
+    AskRefreshList(pane_grid::Pane),
+    ReceivedNewList(pane_grid::Pane, Rc<ouverture_core::server::Reply>),
+    ListMessage(list::ListMessage)
 }
+
 
 impl Panes {
     pub fn new() -> Self {
@@ -150,7 +157,7 @@ impl Application for Panes {
                 if let Some((new_pane, _)) = result {
                     self.focus = Some(new_pane);
                     self.panes.close(&pane);
-                    return Command::single(AskRefreshList(new_pane).into());
+                    return Command::single(Message::ChildMessage(PaneMessage::AskRefreshList(new_pane)).into());
                 } else {
                     warn!("failed to close pane, keeping current one");
                 };
@@ -167,26 +174,26 @@ impl Application for Panes {
                 }
                 self.panes.close(&pane);
             }
-            AskRefreshList(pane) => {
-                let list: &mut list::List = self
-                    .panes
-                    .get_mut(&pane)
-                    .unwrap()
-                    .as_any_mut()
-                    .downcast_mut::<list::List>()
-                    .unwrap();
-                return list.update(AskRefreshList(pane));
-            }
-            ReceivedNewList(pane, reply) => {
-                let list: &mut list::List = self
-                    .panes
-                    .get_mut(&pane)
-                    .unwrap()
-                    .as_any_mut()
-                    .downcast_mut::<list::List>()
-                    .unwrap();
-                return list.update(ReceivedNewList(pane, reply));
-            }
+            // AskRefreshList(pane) => {
+            //     let list: &mut list::List = self
+            //         .panes
+            //         .get_mut(&pane)
+            //         .unwrap()
+            //         .as_any_mut()
+            //         .downcast_mut::<list::List>()
+            //         .unwrap();
+            //     return list.update(AskRefreshList(pane));
+            // }
+            // ReceivedNewList(pane, reply) => {
+            //     let list: &mut list::List = self
+            //         .panes
+            //         .get_mut(&pane)
+            //         .unwrap()
+            //         .as_any_mut()
+            //         .downcast_mut::<list::List>()
+            //         .unwrap();
+            //     return list.update(ReceivedNewList(pane, reply));
+            // }
             // ResizeColumn(pane, event) => {
             //     let mut list: &mut list::List = self
             //         .panes
@@ -201,7 +208,7 @@ impl Application for Panes {
                 let command = Command::batch(
                     self.panes
                         .iter_mut()
-                        .map(|(_p, s)| s.update(ChildMessage(msg))),
+                        .map(|(_p, s)| s.update(ChildMessage(msg.clone()))),
                 );
                 debug!("passing message to children");
                 return command;
@@ -282,18 +289,7 @@ impl Content for Editor {
         self
     }
     fn view(&self, pane: pane_grid::Pane, total_panes: usize) -> Element<Message> {
-        // let button = | label, message, style| {
-        //     button(
-        //         text(label)
-        //             .width(Length::Fill)
-        //             .horizontal_alignment(Horizontal::Center)
-        //             .size(16),
-        //     )
-        //     .width(Length::Fill)
-        //     .padding(8)
-        //     .on_press(message)
-        // };
-        //
+
         let mut controls = column![].spacing(5).max_width(150);
         controls = controls
             .push(button(text("-")).on_press(Message::Split(pane_grid::Axis::Horizontal, pane)))

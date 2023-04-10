@@ -17,7 +17,7 @@ path = "src/main.rs"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-pg-embed = "0.7.1"
+pg-embed = { path = "../../pg-embed"}
 tokio = { version = "1.17.0", features = ["full"] }
 async-stream = "0.3.3"
 
