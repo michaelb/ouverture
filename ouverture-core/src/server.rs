@@ -15,9 +15,18 @@ use color_eyre::eyre::eyre;
 use color_eyre::Result;
 
 use log::{debug, error, info, trace, warn};
+use std::path::Path;
+
+use crate::audio::player::*;
+
+use rc_event_queue::prelude::*;
+use rc_event_queue::spmc::{EventQueue, EventReader};
+
+
 
 pub struct Server {
     config: Config,
+    audio_thread: AudioThread
 }
 
 impl Server {
@@ -68,7 +77,11 @@ impl Server {
                                     .await;
                             trace!("Replied 'received': status: {:?}", res);
                             match command {
-                                Command::Play(i) => (),
+                                Command::Play(i) => {
+                                    if let Some(inferrable_song) = i {
+                                        play(Song::from_path(Path::new(&inferrable_song)));
+                                    }
+                                }
                                 Command::Pause => (),
                                 Command::Toggle => (),
                                 Command::Next => (),

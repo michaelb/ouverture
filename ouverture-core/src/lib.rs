@@ -4,6 +4,7 @@ pub mod library;
 pub mod logger;
 pub mod music;
 pub mod server;
+pub mod audio;
 
 use config::Config;
 use pg_embed::pg_errors::PgEmbedErrorType;

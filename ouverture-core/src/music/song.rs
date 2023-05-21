@@ -9,7 +9,11 @@ use std::time::Duration;
 
 use sea_orm::prelude::*;
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
+use strum_macros::Display;
+
+use log::warn;
+
+#[derive(Clone, Debug, Display, Serialize, Deserialize, PartialEq, Eq)]
 pub enum AudioFormat {
     mp3,
     wav,
@@ -122,7 +126,7 @@ impl Default for Song {
 
 impl Song {
     pub fn from_path(path: &Path) -> Song {
-        let tag = Tag::new().read_from_path(path).unwrap();
+        // let tag = Tag::new().read_from_path(path);
 
         let kind = infer::get_from_path(path)
             .expect("file type read successfully")
@@ -144,13 +148,14 @@ impl Song {
 
         if format == unsupported {
             // TODO reject the new song
+            warn!("format {} is not suported", kind.mime_type() );
         }
 
         Song {
             source: Some(FilePath(path.to_path_buf())),
-            title: tag.title().map(|s| s.into()),
-            artist: tag.artists().map(|v| v[0].to_string()),
-            album: tag.album().map(|a| a.title.to_string()),
+            // title: tag.title().map(|s| s.into()),
+            // artist: tag.artists().map(|v| v[0].to_string()),
+            // album: tag.album().map(|a| a.title.to_string()),
             format,
 
             ..Default::default()

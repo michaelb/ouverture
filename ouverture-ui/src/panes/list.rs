@@ -157,7 +157,7 @@ impl Content for List {
 
 impl List {
     pub fn new() -> Self {
-        List { rows: vec![], columns: vec![(ColumnField::Title, 600.0), (ColumnField::Artist, 350.0)], current_sort: (ColumnField::Title, true) }
+        List { rows: vec![], columns: vec![(ColumnField::Title, 600.0), (ColumnField::Artist, 350.0)], current_sort: (ColumnField::Title, true), current_selection : None }
     }
 
     pub fn ask_refresh_list(&mut self, pane: pane_grid::Pane) -> Command<Message> {
