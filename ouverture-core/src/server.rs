@@ -19,34 +19,44 @@ use std::path::Path;
 
 use crate::audio::player::*;
 
-use rc_event_queue::prelude::*;
-use rc_event_queue::spmc::{EventQueue, EventReader};
-
-
 
 pub struct Server {
     config: Config,
-    audio_thread: AudioThread
+    audio_thread: Option<AudioThread>,
 }
 
 impl Server {
-    pub async fn start(config: &Config) -> Result<()> {
-        let address = config.server_address.clone() + ":" + &config.server_port.to_string();
+    pub fn new(config: &Config) -> Server {
+        Server {
+            config: config.clone(),
+            audio_thread:None
+        }
+
+    }
+    pub async fn run(mut self) -> Result<()> {
+        let address = self.config.server_address.clone() + ":" + &self.config.server_port.to_string();
         trace!("Starting TCP server on {:?}", &address);
         let listener = TcpListener::bind(&address).await?;
         trace!("Server bound to tcp port");
 
         let stop_flag = Arc::new(Mutex::new(false));
+        
+        self.audio_thread = Some(start_audio_thread());
+        let audio_thread_tx = self.audio_thread.as_ref().unwrap().event_queue.clone();
+
 
         // accept many clients at the same time
-        loop {
+        let res = loop {
             let local_stop_flag = stop_flag.clone();
             let (mut socket, _) = listener.accept().await?;
             let client_address = socket.peer_addr()?;
             let client_address = format!("{}", client_address);
             debug!("New client: {}", client_address);
 
-            let config = config.clone();
+            let audio_thread_tx = audio_thread_tx.clone();
+
+
+            let config = self.config.clone();
             let handle = tokio::spawn(async move {
                 let mut buf = [0u8; 8];
 
@@ -79,10 +89,23 @@ impl Server {
                             match command {
                                 Command::Play(i) => {
                                     if let Some(inferrable_song) = i {
-                                        play(Song::from_path(Path::new(&inferrable_song)));
+                                        let song = Song::from_path(Path::new(&inferrable_song));
+                                        audio_thread_send_cmd(
+                                            AudioCommand::PlayNew(song),
+                                            &audio_thread_tx,
+                                        ).await;
+                                    } else {
+                                        audio_thread_send_cmd(
+                                            AudioCommand::Play,
+                                            &audio_thread_tx,
+                                        ).await;
                                     }
                                 }
-                                Command::Pause => (),
+                                Command::Pause => 
+                                        audio_thread_send_cmd(
+                                            AudioCommand::Pause,
+                                            &audio_thread_tx,
+                                        ).await,
                                 Command::Toggle => (),
                                 Command::Next => (),
                                 Command::Previous => (),
@@ -103,6 +126,7 @@ impl Server {
                                 Command::Stop => {
                                     let mut flag = local_stop_flag.lock().unwrap();
                                     *flag = true;
+
                                     break;
                                 }
                             };
@@ -115,9 +139,10 @@ impl Server {
                         Err(e) => warn!("failed to decode message payload; err = {:?}", e),
                     };
                 }
-                Server::reply(Reply::Done, &mut socket).await; // when exiting because of 'stop'
+                Server::reply(Reply::Done, &mut socket).await.unwrap(); // when exiting because of 'stop'
                 trace!("Terminating tokio thread");
             });
+
             trace!("Waiting on tokio thread join for shutdown...");
             let res = tokio::join!(handle);
 
@@ -126,7 +151,12 @@ impl Server {
             if *stop_flag.lock().unwrap() {
                 break Ok(());
             }
-        }
+        };
+
+        stop_audio_thread(self.audio_thread.unwrap()).await;
+
+
+        return res;
     }
     pub async fn send_wait(
         message: &Command,

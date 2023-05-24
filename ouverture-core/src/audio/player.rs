@@ -11,32 +11,50 @@ use symphonia::core::units::{Time, TimeBase};
 use crate::music::song::*;
 use std::fs::File;
 
-use log::{debug, info};
+use log::{debug, info, warn};
 
 use super::output;
 
-use std::thread::{spawn, JoinHandle};
+use std::time;
 
-use rc_event_queue::mpmc::{EventQueue, EventReader};
+use rc_event_queue::mpmc::{DefaultSettings, EventQueue, EventReader};
 use rc_event_queue::prelude::*;
-use std::sync::Arc;
+
+use std::thread;
+
 use std::pin::Pin;
+use std::sync::Arc;
+use std::sync::Mutex;
 
 // The audio thread responds immediately (or at least ASAP)
 // to these commands
 #[derive(Debug, Clone)]
 pub enum AudioCommand {
+    PlayNew(Song),
     Play,
     Pause,
     Toggle,
     Restart,
     Seek(f64),
-    New(Song),
     Quit, // quit loops and get ready to exit this thread
 }
+use AudioCommand::*;
+
 pub struct AudioThread {
-    handle: JoinHandle<()>,
-    event_queue: Pin<Arc<EventQueue<AudioCommand>>>,
+    handle: std::thread::JoinHandle<()>,
+    pub event_queue: Pin<Arc<EventQueue<AudioCommand>>>,
+    pub current: Option<Song>,
+    paused: bool,
+}
+
+impl std::fmt::Debug for AudioThread {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("AudioThread")
+            .field("handle", &self.handle)
+            .field("channel", &"<channel>")
+            .field("current", &self.current)
+            .finish()
+    }
 }
 
 #[derive(Copy, Clone)]
@@ -44,30 +62,85 @@ struct PlayTrackOptions {
     track_id: u32,
     seek_ts: u64,
 }
-
 pub fn start_audio_thread() -> AudioThread {
-    let handle = spawn(audio_thread);
-    let event_queue = EventQueue::<AudioCommand>::new();
-    return AudioThread {
+    let event_queue = EventQueue::new();
+
+    let audio_thread_eq_reader = EventReader::new(&event_queue);
+
+    let handle = std::thread::spawn(|| audio_thread_fn(audio_thread_eq_reader));
+    debug!("audio thread started");
+
+    AudioThread {
         handle,
         event_queue,
-    };
-}
-fn audio_thread() {
-
-    loop {
-
-
+        current: None,
+        paused: true,
     }
-
+}
+pub async fn audio_thread_send_cmd(cmd: AudioCommand, eq: &EventQueue<AudioCommand>) {
+    eq.truncate_front(1);
+    eq.push(cmd);
+    debug!("audio thread cmd passed");
 }
 
-pub fn stop_audio_thread(audio_thread: AudioThread) {
-    return audio_thread.handle.join().unwrap();
+pub async fn stop_audio_thread(audio_thread: AudioThread) {
+    audio_thread_send_cmd(Quit, &audio_thread.event_queue).await;
+    let handle = audio_thread.handle;
+    handle.join().unwrap();
 }
 
-pub fn play(song: Song) {
-    if let Some(SongSource::FilePath(song_source_filepath)) = song.source {
+const AUDIO_THREAD_EQ_POLL_PERIOD_MS: u64 = 50;
+
+fn audio_thread_fn(mut rx: EventReader<AudioCommand, DefaultSettings>) {
+    let mut current_seek = 0;
+    let mut current_song = None;
+    let mut command_from_decode_loop: Option<AudioCommand> = None;
+    loop {
+        let do_cmd = if let Some(cmd) = command_from_decode_loop.clone() {
+            debug!("audio thread interrupted by command: {:?}", cmd);
+            Some(cmd)
+        } else {
+            let mut rx_iter = rx.iter();
+            let res = rx_iter.next();
+            if let Some(cmd) = res {
+                Some(cmd.clone())
+            } else {
+                None
+            }
+        };
+        command_from_decode_loop = match do_cmd {
+            None => {
+                let sleep_period = time::Duration::from_millis(AUDIO_THREAD_EQ_POLL_PERIOD_MS);
+                thread::sleep(sleep_period);
+                None
+            }
+            Some(Quit) => break,
+            Some(PlayNew(song)) => {
+                current_song = Some(song.clone());
+                current_seek = 0;
+                play(&song, &mut rx, &mut current_seek)
+            }
+            Some(Play) => {
+                if let Some(song) = &current_song {
+                    debug!("resuming play of current song: {:?} at seek {current_seek}", song);
+                    play(&song, &mut rx, &mut current_seek)
+                } else {
+                    warn!("Play requested but no current song");
+                    None
+                }
+            }
+            Some(Pause) => None,
+            _ => unimplemented!(),
+        }
+    }
+}
+
+pub fn play(
+    song: &Song,
+    rx: &mut EventReader<AudioCommand, DefaultSettings>,
+    seek: &mut u64,
+) -> Option<AudioCommand> {
+    if let Some(SongSource::FilePath(song_source_filepath)) = song.clone().source {
         let song_src = File::open(&song_source_filepath).unwrap();
         info!("trying to play file {:?}", song_src);
 
@@ -106,9 +179,7 @@ pub fn play(song: Song) {
 
         // Store the track identifier, it will be used to filter packets.
 
-        let seek_ts = 0;
         let track_id = track.id;
-        let mut play_opts = PlayTrackOptions { track_id, seek_ts };
 
         let mut audio_output = None;
 
@@ -148,7 +219,7 @@ pub fn play(song: Song) {
             }
 
             // If the packet does not belong to the selected track, skip over it.
-            if packet.track_id() != play_opts.track_id {
+            if packet.track_id() != track_id {
                 continue;
             }
 
@@ -173,7 +244,7 @@ pub fn play(song: Song) {
                     }
                     // Write the decoded audio samples to the audio output if the presentation timestamp
                     // for the packet is >= the seeked position (0 if not seeking).
-                    if packet.ts() >= play_opts.seek_ts {
+                    if packet.ts() >= *seek {
                         if !no_progress {
                             print_progress(packet.ts(), dur, tb);
                         }
@@ -181,6 +252,19 @@ pub fn play(song: Song) {
                         if let Some(ref mut audio_output) = audio_output {
                             audio_output.write(decoded).unwrap()
                         }
+
+                        // update seek time
+                        *seek = packet.ts();
+                    }
+
+
+                    // check for any command
+                    let mut rx_iter = rx.iter();
+                    let res = rx_iter.next();
+                    match res {
+                        Some(Play) => (),
+                        Some(cmd) => return Some(cmd.clone()), // TODO exhaust the enum manually to avoid alloc in audio thread
+                        _ => (),
                     }
                 }
                 Err(Error::IoError(_)) => {
@@ -198,7 +282,11 @@ pub fn play(song: Song) {
             }
         }; // EOL
         info!("result playing track: {:?}", result);
+        *seek = 0; // reset seek time
     }
+    info!("song does not have local filepath");
+
+    return None;
 }
 
 fn print_progress(ts: u64, dur: Option<u64>, tb: Option<TimeBase>) {
