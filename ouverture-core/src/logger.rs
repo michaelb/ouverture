@@ -1,8 +1,8 @@
 use color_eyre::eyre::eyre;
-use color_eyre::{eyre::Report, eyre::WrapErr, Result, Section};
+use color_eyre::Result;
 use fern::colors::{Color, ColoredLevelConfig};
 use log::debug;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 #[derive(Debug)]
 pub enum LogDestination {
     File(PathBuf),

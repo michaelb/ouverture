@@ -1,18 +1,16 @@
-use audiotags::Tag;
 use chrono::prelude::{DateTime, Local};
 use infer;
-use log::{debug, info, trace};
 use serde::{Deserialize, Serialize};
-use std::error::Error;
 use std::path::{Path, PathBuf};
 use std::time::Duration;
 
-use sea_orm::prelude::*;
+// use sea_orm::prelude::*;
 
 use strum_macros::Display;
 
 use log::warn;
 
+#[allow(non_camel_case_types)]
 #[derive(Clone, Debug, Display, Serialize, Deserialize, PartialEq, Eq)]
 pub enum AudioFormat {
     mp3,

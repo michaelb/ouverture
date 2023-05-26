@@ -1,9 +1,8 @@
 use crate::config::Config;
 use crate::music::song::*;
-use async_walkdir::{DirEntry, WalkDir};
+use async_walkdir::WalkDir;
 use futures_lite::stream::StreamExt;
-use log::{debug, error, info, trace, warn};
-use std::path::Path;
+use log::{trace, warn};
 
 use crate::database::add_db;
 

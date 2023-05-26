@@ -9,17 +9,11 @@ pub mod audio;
 use config::Config;
 use pg_embed::pg_errors::PgEmbedErrorType;
 use server::Server;
-use std::{error::Error, path::Path};
 
 use database::*;
-use pg_embed::pg_errors::PgEmbedError;
-use pg_embed::pg_errors::PgEmbedErrorType::*;
 
-use crate::audio::player::*;
-use color_eyre::eyre::eyre;
 use color_eyre::Result;
 use log::{debug, error, info, warn};
-use std::sync::Arc;
 
 pub async fn start(config: Config) -> Result<()> {
     info!("Ouverture server started");

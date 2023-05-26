@@ -1,12 +1,10 @@
-use symphonia::core::audio::AudioBuffer;
-use symphonia::core::codecs::CodecParameters;
 use symphonia::core::codecs::{DecoderOptions, CODEC_TYPE_NULL};
 use symphonia::core::errors::Error;
 use symphonia::core::formats::FormatOptions;
 use symphonia::core::io::MediaSourceStream;
 use symphonia::core::meta::MetadataOptions;
 use symphonia::core::probe::Hint;
-use symphonia::core::units::{Time, TimeBase};
+use symphonia::core::units::TimeBase;
 
 use crate::music::song::*;
 use std::fs::File;
@@ -24,7 +22,6 @@ use std::thread;
 
 use std::pin::Pin;
 use std::sync::Arc;
-use std::sync::Mutex;
 
 // The audio thread responds immediately (or at least ASAP)
 // to these commands
@@ -33,8 +30,6 @@ pub enum AudioCommand {
     PlayNew(Song),
     Play,
     Pause,
-    Toggle,
-    Restart,
     Seek(f64),
     Quit, // quit loops and get ready to exit this thread
 }
@@ -44,24 +39,18 @@ pub struct AudioThread {
     handle: std::thread::JoinHandle<()>,
     pub event_queue: Pin<Arc<EventQueue<AudioCommand>>>,
     pub current: Option<Song>,
-    paused: bool,
 }
 
 impl std::fmt::Debug for AudioThread {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("AudioThread")
             .field("handle", &self.handle)
-            .field("channel", &"<channel>")
+            .field("event_queue", &"<event_queue>")
             .field("current", &self.current)
             .finish()
     }
 }
 
-#[derive(Copy, Clone)]
-struct PlayTrackOptions {
-    track_id: u32,
-    seek_ts: u64,
-}
 pub fn start_audio_thread() -> AudioThread {
     let event_queue = EventQueue::new();
 
@@ -74,17 +63,16 @@ pub fn start_audio_thread() -> AudioThread {
         handle,
         event_queue,
         current: None,
-        paused: true,
     }
 }
-pub async fn audio_thread_send_cmd(cmd: AudioCommand, eq: &EventQueue<AudioCommand>) {
+pub fn audio_thread_send_cmd(cmd: AudioCommand, eq: &EventQueue<AudioCommand>) {
     eq.truncate_front(1);
     eq.push(cmd);
     debug!("audio thread cmd passed");
 }
 
-pub async fn stop_audio_thread(audio_thread: AudioThread) {
-    audio_thread_send_cmd(Quit, &audio_thread.event_queue).await;
+pub fn stop_audio_thread(audio_thread: AudioThread) {
+    audio_thread_send_cmd(Quit, &audio_thread.event_queue);
     let handle = audio_thread.handle;
     handle.join().unwrap();
 }
@@ -122,7 +110,10 @@ fn audio_thread_fn(mut rx: EventReader<AudioCommand, DefaultSettings>) {
             }
             Some(Play) => {
                 if let Some(song) = &current_song {
-                    debug!("resuming play of current song: {:?} at seek {current_seek}", song);
+                    debug!(
+                        "resuming play of current song: {:?} at seek {current_seek}",
+                        song
+                    );
                     play(&song, &mut rx, &mut current_seek)
                 } else {
                     warn!("Play requested but no current song");
@@ -256,7 +247,6 @@ pub fn play(
                         // update seek time
                         *seek = packet.ts();
                     }
-
 
                     // check for any command
                     let mut rx_iter = rx.iter();

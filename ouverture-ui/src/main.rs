@@ -15,6 +15,7 @@ pub mod panes;
 use ouverture_core::music::song::Song;
 
 use panes::list;
+use std::error::Error;
 
 use opt::Opt;
 
@@ -26,7 +27,11 @@ use log::LevelFilter::*;
 use std::convert::Into;
 use std::path::{Path, PathBuf};
 
-use std::rc::Rc;
+use ouverture_core::server::{Command as ServerCommand, Reply, Server};
+
+use futures_core::stream::Stream;
+use futures_util::pin_mut;
+use futures_util::stream::StreamExt;
 
 use log::{debug, info, warn};
 use panes::{Content, PaneMessage};
@@ -116,7 +121,6 @@ pub enum Message {
     IntoControlBar(pane_grid::Pane),
     IntoSearchBar(pane_grid::Pane),
     IntoList(pane_grid::Pane),
-
     // // List message
 }
 
@@ -147,12 +151,29 @@ impl<'a> Application for Ouverture {
     }
 
     fn update(&mut self, message: Message) -> Command<Message> {
+        let address = "127.0.0.1:6603";
         debug!("top-level message: {:?}", message);
         match message {
             Message::ThemeChanged(theme) => {
                 self.theme = theme.into();
                 Command::none()
             }
+
+            Message::Play(opt_song) => Command::single(Action::Future(Box::pin(async move {
+                let reply = Server::send_wait(&ServerCommand::Toggle, address)
+                    .await
+                    .unwrap();
+                debug!("GUI asked for play");
+                Message::Nothing
+            }))),
+            Message::Toggle => Command::single(Action::Future(Box::pin(async move {
+                debug!("GUI asking for toggle");
+                let reply = Server::send_wait(&ServerCommand::Toggle, address)
+                    .await
+                    .unwrap();
+                debug!("GUI asked for toggle, server replied: {:?}", reply);
+                Message::Nothing
+            }))),
             any => {
                 debug!("updating panes");
                 self.panes.update(any)

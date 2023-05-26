@@ -4,7 +4,7 @@ use std::io::prelude::*;
 use std::path::{Path, PathBuf};
 use toml;
 
-use color_eyre::{eyre::eyre, Result};
+use color_eyre::Result;
 
 use platform_dirs::AppDirs;
 

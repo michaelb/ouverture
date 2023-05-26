@@ -5,10 +5,8 @@ use pg_embed::pg_errors::PgEmbedError;
 use pg_embed::pg_fetch::{PgFetchSettings, PG_V13};
 use pg_embed::postgres::{PgEmbed, PgSettings};
 use platform_dirs::AppDirs;
-use std::error::Error;
 use std::path::PathBuf;
 use std::time::Duration;
-use tokio::net::TcpListener;
 
 use crate::config::Config;
 use crate::music::song::*;
