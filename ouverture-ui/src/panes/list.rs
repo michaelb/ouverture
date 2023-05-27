@@ -4,7 +4,7 @@ use iced::{
     alignment::{Horizontal, Vertical},
     Command, Element, Length, Padding,
 };
-use log::debug;
+use log::{debug, trace};
 use std::string::ToString;
 use strum::Display;
 

@@ -160,10 +160,10 @@ impl<'a> Application for Ouverture {
             }
 
             Message::Play(opt_song) => Command::single(Action::Future(Box::pin(async move {
-                let reply = Server::send_wait(&ServerCommand::Toggle, address)
+                let reply = Server::send_wait(&ServerCommand::Play(opt_song), address)
                     .await
                     .unwrap();
-                debug!("GUI asked for play");
+                debug!("GUI asked for play (status = {:?}", reply);
                 Message::Nothing
             }))),
             Message::Toggle => Command::single(Action::Future(Box::pin(async move {

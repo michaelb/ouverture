@@ -13,8 +13,14 @@ use crate::library::*;
 use crate::music::song::Song;
 use color_eyre::Result;
 
+use rc_event_queue::mpmc::EventQueue;
+
+use crate::audio::AudioCommand;
+
 use log::{debug, error, info, trace, warn};
 use std::path::Path;
+
+use std::pin::Pin;
 
 use crate::audio::{
     audio_thread_pause, audio_thread_play, audio_thread_play_song, start_audio_thread,
@@ -32,6 +38,7 @@ pub struct Server {
 struct ServerState {
     current_song: Option<Song>,
     paused: bool,
+    stop: bool, // stop the server
 }
 
 impl Server {
@@ -39,6 +46,7 @@ impl Server {
         let state = Arc::new(Mutex::new(ServerState {
             current_song: None,
             paused: true,
+            stop: false,
         }));
         Server {
             config: config.clone(),
@@ -54,14 +62,11 @@ impl Server {
         let listener = TcpListener::bind(&address).await?;
         trace!("Server bound to tcp port");
 
-        let stop_flag = Arc::new(Mutex::new(false));
-
         self.audio_thread = Some(start_audio_thread());
         let audio_thread_tx = self.audio_thread.as_ref().unwrap().event_queue.clone();
 
         // accept many clients at the same time
         let res = loop {
-            let local_stop_flag = stop_flag.clone();
             let (mut socket, _) = listener.accept().await?;
             let client_address = socket.peer_addr()?;
             let client_address = format!("{}", client_address);
@@ -102,71 +107,29 @@ impl Server {
                                 Server::reply(Reply::Received(command.to_string()), &mut socket)
                                     .await;
                             trace!("Replied 'received': status: {:?}", res);
-                            match command {
-                                Command::Play(i) => {
-                                    if let Some(inferrable_song) = i {
-                                        let song = Song::from_path(Path::new(&inferrable_song));
-                                        audio_thread_play_song(&audio_thread_tx, song.clone());
-                                        state.lock().unwrap().paused = false;
-                                        state.lock().unwrap().current_song = Some(song);
-                                    } else {
-                                        audio_thread_play(&audio_thread_tx);
-                                        state.lock().unwrap().paused = false; // TODO wrap in {} together so that lock covers audio_thread_play cmd
-                                    }
-                                }
-                                Command::Toggle => {
-                                    debug!("started toggle");
-                                    let mut s = state.lock().unwrap();
-                                    if s.current_song.is_some() {
-                                        if s.paused {
-                                            audio_thread_play(&audio_thread_tx);
-                                            s.paused = false;
-                                        } else {
-                                            audio_thread_pause(&audio_thread_tx);
-                                            s.paused = true;
-                                        }
-                                    }
-                                    debug!("ended toggle");
-
-                                }
-                                Command::Pause => {
-                                    audio_thread_pause(&audio_thread_tx);
-                                    state.lock().unwrap().paused = true;
-                                }
-                                Command::Next => (),
-                                Command::Previous => (),
-
-                                Command::Scan => scan(&config).await,
-                                Command::List(i) => {
-                                    let list = list(&config, i).await;
-                                    match Server::reply(Reply::List(list), &mut socket).await {
-                                        Ok(_) => trace!("Replied 'list' successfully"),
-                                        Err(e) => {
-                                            warn!("Failed to send 'list' reply to client: {:?}", e)
-                                        }
-                                    }
-                                }
-
-                                Command::Ping => (),
-                                Command::Restart => (),
-                                Command::Stop => {
-                                    let mut flag = local_stop_flag.lock().unwrap();
-                                    *flag = true;
-
-                                    break;
-                                }
-                            };
+                            Self::handle_command(
+                                command,
+                                state.clone(),
+                                config.clone(),
+                                audio_thread_tx.clone(),
+                                &mut socket,
+                            )
+                            .await;
 
                             match Server::reply(Reply::Done, &mut socket).await {
                                 Ok(_) => trace!("Replied 'done' successfully"),
                                 Err(e) => warn!("Failed to send 'done' to client: {:?}", e),
                             }
+
+                            if state.lock().unwrap().stop {
+                                break;
+                            }
                         }
                         Err(e) => warn!("failed to decode message payload; err = {:?}", e),
                     };
                 }
-                Server::reply(Reply::Done, &mut socket).await; // when exiting because of 'stop'
-                trace!("Terminating tokio thread");
+
+                trace!("Terminating tokio thread allocated to this request");
             });
 
             trace!("Waiting on tokio thread join for shutdown...");
@@ -174,7 +137,7 @@ impl Server {
 
             // in case the Stop command was received, exit the loop.
             // The binded address is released at 'listener' drop
-            if *stop_flag.lock().unwrap() {
+            if self.state.lock().unwrap().stop {
                 break Ok(());
             }
         };
@@ -183,6 +146,67 @@ impl Server {
 
         return res;
     }
+
+    async fn handle_command(
+        command: Command,
+        state: Arc<Mutex<ServerState>>,
+        config: Config,
+        audio_thread_tx: Pin<Arc<EventQueue<AudioCommand>>>,
+        mut socket: &mut TcpStream,
+    ) {
+        match command {
+            Command::Play(i) => {
+                if let Some(song) = i {
+                    audio_thread_play_song(&audio_thread_tx, song.clone());
+                    state.lock().unwrap().paused = false;
+                    state.lock().unwrap().current_song = Some(song);
+                } else {
+                    audio_thread_play(&audio_thread_tx);
+                    state.lock().unwrap().paused = false; // TODO wrap in {} together so that lock covers audio_thread_play cmd
+                }
+            }
+            Command::Toggle => {
+                debug!("started toggle");
+                let mut s = state.lock().unwrap();
+                if s.current_song.is_some() {
+                    if s.paused {
+                        audio_thread_play(&audio_thread_tx);
+                        s.paused = false;
+                    } else {
+                        audio_thread_pause(&audio_thread_tx);
+                        s.paused = true;
+                    }
+                }
+                debug!("ended toggle");
+            }
+            Command::Pause => {
+                audio_thread_pause(&audio_thread_tx);
+                state.lock().unwrap().paused = true;
+            }
+            Command::Next => (),
+            Command::Previous => (),
+
+            Command::Scan => scan(&config).await,
+            Command::List(i) => {
+                let list = list(&config, i).await;
+                match Server::reply(Reply::List(list), &mut socket).await {
+                    Ok(_) => trace!("Replied 'list' successfully"),
+                    Err(e) => {
+                        warn!("Failed to send 'list' reply to client: {:?}", e)
+                    }
+                }
+            }
+
+            Command::Ping => (),
+            Command::Restart => (),
+            Command::Stop => {
+                state.lock().unwrap().stop = true;
+            }
+        };
+    }
+
+    // clients can use this helper to send commands to a server
+    // and wait till the server replies 'done'
     pub async fn send_wait(
         message: &Command,
         address: &str,
@@ -222,6 +246,7 @@ impl Server {
         Err("Communication with the server failed".into())
     }
 
+    // send a command to the server and receive an stream to listen to the server's responses
     pub async fn send<'a>(
         message: &'a Command,
         address: &'a str,
@@ -281,7 +306,7 @@ impl Server {
 #[derive(Display, Debug, Serialize, Deserialize, EnumString, EnumIter, Clone)]
 pub enum Command {
     // "Music" commands
-    Play(Option<String>),
+    Play(Option<Song>),
     Pause,
     Toggle,
     Next,

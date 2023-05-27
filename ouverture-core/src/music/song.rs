@@ -1,4 +1,5 @@
 use chrono::prelude::{DateTime, Local};
+use audiotags::Tag;
 use infer;
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
@@ -68,7 +69,7 @@ use SongSource::*;
 impl Into<String> for SongSource {
     fn into(self) -> String {
         match self {
-            FilePath(path) => String::from("file:") + path.to_str().unwrap(),
+            FilePath(path) => String::from("path:") + path.to_str().unwrap(),
             YoutubeUrl(url) => String::from("yt_url:") + &url,
             Unknown => String::from("unknown"),
         }
@@ -124,7 +125,7 @@ impl Default for Song {
 
 impl Song {
     pub fn from_path(path: &Path) -> Song {
-        // let tag = Tag::new().read_from_path(path);
+        let tag = Tag::new().read_from_path(path).unwrap();
 
         let kind = infer::get_from_path(path)
             .expect("file type read successfully")
@@ -151,9 +152,9 @@ impl Song {
 
         Song {
             source: Some(FilePath(path.to_path_buf())),
-            // title: tag.title().map(|s| s.into()),
-            // artist: tag.artists().map(|v| v[0].to_string()),
-            // album: tag.album().map(|a| a.title.to_string()),
+            title: tag.title().map(|s| s.into()),
+            artist: tag.artists().map(|v| v[0].to_string()),
+            album: tag.album().map(|a| a.title.to_string()),
             format,
 
             ..Default::default()

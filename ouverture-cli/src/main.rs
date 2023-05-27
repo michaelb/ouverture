@@ -1,9 +1,10 @@
 use color_eyre::eyre::eyre;
 use color_eyre::{eyre::Report, eyre::WrapErr, Result, Section};
 use ouverture_core::config::Config;
+use ouverture_core::music::song::Song;
 use ouverture_core::server::{Command, Reply, Server};
 use std::error::Error;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::time::Duration;
 use structopt::StructOpt;
 use tokio::time::timeout;
@@ -113,7 +114,13 @@ async fn launch_command(opt: &Opt) -> Result<(), Box<dyn Error + Send + Sync>> {
     }
 
     if let Some(optionnal_path) = opt.play.as_ref() {
-        handle(Server::send(&Command::Play(optionnal_path.clone()), &server_addr).await).await;
+        let opt_song = if let Some(path) = optionnal_path {
+            let path = PathBuf::from(path);
+            Some(Song::from_path(&path))
+        } else {
+            None
+        };
+        handle(Server::send(&Command::Play(opt_song.clone()), &server_addr).await).await;
     }
     if opt.pause {
         handle(Server::send(&Command::Pause, &server_addr).await).await;

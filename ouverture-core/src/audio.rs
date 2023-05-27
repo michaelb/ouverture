@@ -8,7 +8,7 @@ use rc_event_queue::mpmc::EventQueue;
 
 pub use player::{AudioThread, start_audio_thread, stop_audio_thread};
 
-use player::{audio_thread_send_cmd, AudioCommand};
+pub use player::{audio_thread_send_cmd, AudioCommand};
 
 pub fn audio_thread_play_song(eq: &EventQueue<AudioCommand>, song: Song) {
     audio_thread_send_cmd(AudioCommand::PlayNew(song), &eq);

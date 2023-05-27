@@ -12,7 +12,7 @@ pub struct Panes {
 }
 
 use crate::Message;
-use log::{debug, warn};
+use log::{trace, debug, warn};
 
 use std::any::Any;
 use std::rc::Rc;
@@ -228,7 +228,7 @@ impl Application for Panes {
             } else {
                 pane_grid::TitleBar::new(text("not focused")).padding(10)
             };
-            debug!("updating view in panes");
+            trace!("updating view in panes");
             pane_grid::Content::new(content.view(pane, total_panes)).title_bar(title_bar)
         })
         .width(Length::Fill)

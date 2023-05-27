@@ -274,7 +274,7 @@ pub fn play(
         info!("result playing track: {:?}", result);
         *seek = 0; // reset seek time
     }
-    info!("song does not have local filepath");
+    info!("song does not have local filepath ({:?})", song);
 
     return None;
 }
