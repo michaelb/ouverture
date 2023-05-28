@@ -7,7 +7,6 @@ pub mod server;
 pub mod audio;
 
 use config::Config;
-use pg_embed::pg_errors::PgEmbedErrorType;
 use server::Server;
 
 use database::*;

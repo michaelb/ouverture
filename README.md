@@ -40,17 +40,18 @@ Very much at Work-In-*Planning* stage now 😄
  - [x] cli can communicate with server
  - [x] define Song & other structs (playlist..)
  - [x] use the database to store those values
- - [ ] display songs in a UI window
+ - [x] display songs in a UI window
  - [ ] fix warnings & clean out / refactor
- - [ ] unit test (target > 60%)
- - [ ] statically link gstreamer (git submodule?) & play a sound
- - [ ] play songs & interface (seek bar, crossfade)
+ - [ ] test (target > 60%)
+ - [x] play a sound
+ - [x] play/pause
+ - [ ] interface (seek bar, crossfade)
  - [ ] logo
  - [ ] searchable library
  - [ ] playlists, sort by...
  - [ ] fix warnings & clean out / refactor
  - [ ] unit test (target > 80%)
- - [ ] fully themable GUI
+ - [x] fully themable GUI
  - [ ] youtube-dl[p] integration
  - [ ] beats/metadata service to fix metadata
  - [ ] packaging (arch at least) & CI
@@ -64,7 +65,7 @@ Very much at Work-In-*Planning* stage now 😄
 - [QuodLibet](https://github.com/quodlibet/quodlibet)
 - [iced](https://github.com/iced-rs/iced)
 - [termusic](https://github.com/tramhao/termusic)
-- [postrgre](https://github.com/postgres/postgres)
+- [postgres](https://github.com/postgres/postgres)
 - [beets](https://github.com/beetbox/beets)
 - [yt-dlp](https://github.com/yt-dlp/yt-dlp)
 - [rustic](https://github.com/rustic-music-player/rustic)

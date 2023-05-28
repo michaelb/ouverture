@@ -15,42 +15,36 @@ use color_eyre::Result;
 
 use rc_event_queue::mpmc::EventQueue;
 
-use crate::audio::AudioCommand;
+use crate::audio::AudioState;
 
 use log::{debug, error, info, trace, warn};
-use std::path::Path;
-
 use std::pin::Pin;
+use tokio::sync::broadcast::{channel, Receiver, Sender};
 
 use crate::audio::{
     audio_thread_pause, audio_thread_play, audio_thread_play_song, start_audio_thread,
-    stop_audio_thread, AudioThread,
+    stop_audio_thread, AudioTask,
 };
 
 pub struct Server {
     config: Config,
-    audio_thread: Option<AudioThread>,
+    audio_task: Option<AudioTask>, // this task has for only role to send queued songs to the audio thread
+                                   // when it finishes playing a song
     state: Arc<Mutex<ServerState>>,
 }
 
 /// unique shareable / queryable state
 #[derive(Clone)]
 struct ServerState {
-    current_song: Option<Song>,
-    paused: bool,
-    stop: bool, // stop the server
+    stop: bool, // stop-the-server flag
 }
 
 impl Server {
-    pub fn new(config: &Config) -> Server {
-        let state = Arc::new(Mutex::new(ServerState {
-            current_song: None,
-            paused: true,
-            stop: false,
-        }));
-        Server {
+    pub fn new(config: &Config) -> Self {
+        let state = Arc::new(Mutex::new(ServerState { stop: false }));
+        Self {
             config: config.clone(),
-            audio_thread: None,
+            audio_task: None,
             state,
         }
     }
@@ -62,8 +56,8 @@ impl Server {
         let listener = TcpListener::bind(&address).await?;
         trace!("Server bound to tcp port");
 
-        self.audio_thread = Some(start_audio_thread());
-        let audio_thread_tx = self.audio_thread.as_ref().unwrap().event_queue.clone();
+        self.audio_task = Some(AudioTask::run());
+        let audio_state = self.audio_task.as_ref().unwrap().state.clone();
 
         // accept many clients at the same time
         let res = loop {
@@ -72,8 +66,8 @@ impl Server {
             let client_address = format!("{}", client_address);
             debug!("New client: {}", client_address);
 
-            let audio_thread_tx = audio_thread_tx.clone();
             let state = self.state.clone();
+            let audio_state = audio_state.clone();
 
             let config = self.config.clone();
             let handle = tokio::spawn(async move {
@@ -104,19 +98,19 @@ impl Server {
                         Ok(command) => {
                             info!("{command} command received");
                             let res =
-                                Server::reply(Reply::Received(command.to_string()), &mut socket)
+                                Self::reply(Reply::Received(command.to_string()), &mut socket)
                                     .await;
                             trace!("Replied 'received': status: {:?}", res);
                             Self::handle_command(
                                 command,
-                                state.clone(),
                                 config.clone(),
-                                audio_thread_tx.clone(),
+                                state.clone(),
+                                audio_state.clone(),
                                 &mut socket,
                             )
                             .await;
 
-                            match Server::reply(Reply::Done, &mut socket).await {
+                            match Self::reply(Reply::Done, &mut socket).await {
                                 Ok(_) => trace!("Replied 'done' successfully"),
                                 Err(e) => warn!("Failed to send 'done' to client: {:?}", e),
                             }
@@ -142,54 +136,31 @@ impl Server {
             }
         };
 
-        stop_audio_thread(self.audio_thread.unwrap());
+        self.audio_task.unwrap().stop();
 
         return res;
     }
 
     async fn handle_command(
         command: Command,
-        state: Arc<Mutex<ServerState>>,
         config: Config,
-        audio_thread_tx: Pin<Arc<EventQueue<AudioCommand>>>,
+        state: Arc<Mutex<ServerState>>,
+        audio_state: Arc<Mutex<AudioState>>,
         mut socket: &mut TcpStream,
     ) {
         match command {
-            Command::Play(i) => {
-                if let Some(song) = i {
-                    audio_thread_play_song(&audio_thread_tx, song.clone());
-                    state.lock().unwrap().paused = false;
-                    state.lock().unwrap().current_song = Some(song);
-                } else {
-                    audio_thread_play(&audio_thread_tx);
-                    state.lock().unwrap().paused = false; // TODO wrap in {} together so that lock covers audio_thread_play cmd
-                }
-            }
-            Command::Toggle => {
-                debug!("started toggle");
-                let mut s = state.lock().unwrap();
-                if s.current_song.is_some() {
-                    if s.paused {
-                        audio_thread_play(&audio_thread_tx);
-                        s.paused = false;
-                    } else {
-                        audio_thread_pause(&audio_thread_tx);
-                        s.paused = true;
-                    }
-                }
-                debug!("ended toggle");
-            }
-            Command::Pause => {
-                audio_thread_pause(&audio_thread_tx);
-                state.lock().unwrap().paused = true;
-            }
+            Command::Play(i) => audio_state.lock().unwrap().play(i),
+            Command::Toggle => audio_state.lock().unwrap().toggle(),
+
+            Command::Pause => audio_state.lock().unwrap().pause(),
+
             Command::Next => (),
             Command::Previous => (),
 
             Command::Scan => scan(&config).await,
             Command::List(i) => {
                 let list = list(&config, i).await;
-                match Server::reply(Reply::List(list), &mut socket).await {
+                match Self::reply(Reply::List(list), &mut socket).await {
                     Ok(_) => trace!("Replied 'list' successfully"),
                     Err(e) => {
                         warn!("Failed to send 'list' reply to client: {:?}", e)

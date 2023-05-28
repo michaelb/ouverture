@@ -15,6 +15,7 @@ use super::output;
 
 use std::time;
 
+use tokio::sync::broadcast::{ Sender, Receiver};
 use rc_event_queue::mpmc::{DefaultSettings, EventQueue, EventReader};
 use rc_event_queue::prelude::*;
 
@@ -22,6 +23,12 @@ use std::thread;
 
 use std::pin::Pin;
 use std::sync::Arc;
+
+#[derive(Copy, Clone, Debug)]
+pub enum AudioEvent {
+    Finished,
+    Failed,
+}
 
 // The audio thread responds immediately (or at least ASAP)
 // to these commands
@@ -31,13 +38,13 @@ pub enum AudioCommand {
     Play,
     Pause,
     Seek(f64),
+    Done, // signal the current song has finished playing
     Quit, // quit loops and get ready to exit this thread
 }
 use AudioCommand::*;
 
 pub struct AudioThread {
     handle: std::thread::JoinHandle<()>,
-    pub event_queue: Pin<Arc<EventQueue<AudioCommand>>>,
     pub current: Option<Song>,
 }
 
@@ -51,35 +58,32 @@ impl std::fmt::Debug for AudioThread {
     }
 }
 
-pub fn start_audio_thread() -> AudioThread {
-    let event_queue = EventQueue::new();
+pub fn start_audio_thread(rx: Receiver<AudioCommand>, tx: Sender<AudioEvent>) -> AudioThread {
 
-    let audio_thread_eq_reader = EventReader::new(&event_queue);
-
-    let handle = std::thread::spawn(|| audio_thread_fn(audio_thread_eq_reader));
+    let handle = std::thread::spawn(|| audio_thread_fn(rx,tx));
     debug!("audio thread started");
 
     AudioThread {
         handle,
-        event_queue,
         current: None,
     }
 }
-pub fn audio_thread_send_cmd(cmd: AudioCommand, eq: &EventQueue<AudioCommand>) {
-    eq.truncate_front(1);
-    eq.push(cmd);
+pub fn audio_thread_send_cmd(cmd: AudioCommand, tx: &Sender<AudioCommand>) {
+    tx.send(cmd).unwrap();
     debug!("audio thread cmd passed");
 }
 
 pub fn stop_audio_thread(audio_thread: AudioThread) {
-    audio_thread_send_cmd(Quit, &audio_thread.event_queue);
     let handle = audio_thread.handle;
     handle.join().unwrap();
 }
 
 const AUDIO_THREAD_EQ_POLL_PERIOD_MS: u64 = 50;
 
-fn audio_thread_fn(mut rx: EventReader<AudioCommand, DefaultSettings>) {
+fn audio_thread_fn(
+    mut rx: Receiver<AudioCommand>,
+    tx: Sender<AudioEvent>,
+) {
     let mut current_seek = 0;
     let mut current_song = None;
     let mut command_from_decode_loop: Option<AudioCommand> = None;
@@ -88,9 +92,7 @@ fn audio_thread_fn(mut rx: EventReader<AudioCommand, DefaultSettings>) {
             debug!("audio thread interrupted by command: {:?}", cmd);
             Some(cmd)
         } else {
-            let mut rx_iter = rx.iter();
-            let res = rx_iter.next();
-            if let Some(cmd) = res {
+            if let Ok(cmd) = rx.try_recv() {
                 Some(cmd.clone())
             } else {
                 None
@@ -106,7 +108,7 @@ fn audio_thread_fn(mut rx: EventReader<AudioCommand, DefaultSettings>) {
             Some(PlayNew(song)) => {
                 current_song = Some(song.clone());
                 current_seek = 0;
-                play(&song, &mut rx, &mut current_seek)
+                decode(&song, &mut rx, &mut current_seek)
             }
             Some(Play) => {
                 if let Some(song) = &current_song {
@@ -114,7 +116,7 @@ fn audio_thread_fn(mut rx: EventReader<AudioCommand, DefaultSettings>) {
                         "resuming play of current song: {:?} at seek {current_seek}",
                         song
                     );
-                    play(&song, &mut rx, &mut current_seek)
+                    decode(&song, &mut rx, &mut current_seek)
                 } else {
                     warn!("Play requested but no current song");
                     None
@@ -126,9 +128,9 @@ fn audio_thread_fn(mut rx: EventReader<AudioCommand, DefaultSettings>) {
     }
 }
 
-pub fn play(
+pub fn decode(
     song: &Song,
-    rx: &mut EventReader<AudioCommand, DefaultSettings>,
+    rx: &mut Receiver<AudioCommand>,
     seek: &mut u64,
 ) -> Option<AudioCommand> {
     if let Some(SongSource::FilePath(song_source_filepath)) = song.clone().source {
@@ -249,13 +251,11 @@ pub fn play(
                     }
 
                     // check for any command
-                    let mut rx_iter = rx.iter();
-                    let res = rx_iter.next();
-                    match res {
-                        Some(Play) => (),
-                        Some(cmd) => return Some(cmd.clone()), // TODO exhaust the enum manually to avoid alloc in audio thread
-                        _ => (),
-                    }
+                    match rx.try_recv() {
+                        Ok(Play) => (),
+                        Ok(cmd) => return Some(cmd.clone()), // TODO exhaust the enum manually to avoid alloc in audio thread
+                        Err(_) => (), // most likely no new cmd
+                     }
                 }
                 Err(Error::IoError(_)) => {
                     // The packet failed to decode due to an IO error, skip the packet.
