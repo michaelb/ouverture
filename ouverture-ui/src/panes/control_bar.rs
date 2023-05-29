@@ -37,22 +37,7 @@ impl ControlBar {
         let address = "127.0.0.1:6603";
 
         match message {
-            Message::Play(opt_song) => Command::single(Action::Future(Box::pin(async move {
-                let reply = Server::send_wait(&ServerCommand::Toggle, address)
-                    .await
-                    .unwrap();
-                debug!("GUI asked for play");
-                Message::Nothing
-            }))),
-            Message::Toggle => Command::single(Action::Future(Box::pin(async move {
-                debug!("GUI asking for toggle");
-                let reply = Server::send_wait(&ServerCommand::Toggle, address)
-                    .await
-                    .unwrap();
-                debug!("GUI asked for toggle, server replied: {:?}", reply);
-                Message::Nothing
-            }))),
-            _ => Command::none()
+                        _ => Command::none()
         }
     }
 

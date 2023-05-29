@@ -37,6 +37,7 @@ pub enum AudioCommand {
     PlayNew(Song),
     Play,
     Pause,
+    Stop, // pause and forget current song
     Seek(f64),
     Done, // signal the current song has finished playing
     Quit, // quit loops and get ready to exit this thread
@@ -123,6 +124,7 @@ fn audio_thread_fn(
                 }
             }
             Some(Pause) => None,
+            Some(Pause) => {current_song = None; None},
             _ => unimplemented!(),
         }
     }

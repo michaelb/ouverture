@@ -149,13 +149,14 @@ impl Server {
         mut socket: &mut TcpStream,
     ) {
         match command {
-            Command::Play(i) => audio_state.lock().unwrap().play(i),
+            Command::Play(opt_song) => audio_state.lock().unwrap().play(opt_song),
             Command::Toggle => audio_state.lock().unwrap().toggle(),
 
             Command::Pause => audio_state.lock().unwrap().pause(),
+            Command::Enqueue(song) => audio_state.lock().unwrap().enqueue(song),
 
-            Command::Next => (),
-            Command::Previous => (),
+            Command::Next => audio_state.lock().unwrap().next(),
+            Command::Previous => audio_state.lock().unwrap().previous(),
 
             Command::Scan => scan(&config).await,
             Command::List(i) => {
@@ -282,6 +283,7 @@ pub enum Command {
     Toggle,
     Next,
     Previous,
+    Enqueue(Song),
 
     // "Library" commands
     Scan,

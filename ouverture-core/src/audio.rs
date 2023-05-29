@@ -12,6 +12,7 @@ use crate::music::song::Song;
 
 use tokio::sync::broadcast::{channel, Receiver, Sender};
 use tokio::task::JoinHandle;
+use tokio::time::{self, Duration};
 
 pub use player::{start_audio_thread, stop_audio_thread, AudioThread};
 
@@ -28,25 +29,31 @@ pub fn audio_thread_play(tx: &Sender<AudioCommand>) {
 pub fn audio_thread_pause(tx: &Sender<AudioCommand>) {
     audio_thread_send_cmd(AudioCommand::Pause, tx);
 }
+pub fn audio_thread_stop(tx: &Sender<AudioCommand>) {
+    audio_thread_send_cmd(AudioCommand::Stop, tx);
+}
 
 #[derive(Clone)]
 pub struct AudioState {
     pub cmd_tx: Sender<AudioCommand>,
     current_song: Option<Song>,
     paused: bool,
-    queue: VecDeque<Song>,
+    queue_future: VecDeque<Song>,
+    queue_past: VecDeque<Song>,
 }
-
 
 impl AudioState {
     pub fn play(&mut self, opt_song: Option<Song>) {
         if let Some(song) = opt_song {
             audio_thread_play_song(&self.cmd_tx, song.clone());
             self.current_song = Some(song);
+            self.paused = false;
         } else {
-            audio_thread_play(&self.cmd_tx);
+            if self.current_song.is_some() {
+                audio_thread_play(&self.cmd_tx);
+                self.paused = false;
+            }
         }
-        self.paused = false;
     }
     pub fn pause(&mut self) {
         audio_thread_pause(&self.cmd_tx);
@@ -60,13 +67,31 @@ impl AudioState {
         }
     }
 
+    pub fn enqueue(&mut self, song: Song) {
+        self.queue_future.push_back(song);
+    }
+
     pub fn next(&mut self) {
-        let opt_song = self.queue.pop_front();
-        if  opt_song.is_some() {
+        let opt_song = self.queue_future.pop_front();
+        if opt_song.is_some() {
+            if let Some(song) = &self.current_song {
+                self.queue_past.push_back(song.clone());
+            }
             self.play(opt_song);
         } else {
+            audio_thread_stop(&self.cmd_tx);
             self.current_song = None;
             self.paused = true;
+        }
+    }
+    pub fn previous(&mut self) {
+        // TODO resume from start if seek < 5s
+        let opt_song = self.queue_past.pop_back();
+        if opt_song.is_some() {
+            if let Some(current_song) = &self.current_song {
+                self.queue_future.push_front(current_song.clone());
+            }
+            self.play(opt_song);
         }
     }
 }
@@ -78,7 +103,7 @@ pub struct AudioTask {
     pub state: Arc<Mutex<AudioState>>,
 }
 
-const AUDIO_TASK_POLL_FREQ_MS: u64 = 50;
+const AUDIO_TASK_POLL_FREQ_MS: u64 = 200;
 
 impl AudioTask {
     pub fn run() -> Self {
@@ -92,7 +117,8 @@ impl AudioTask {
             current_song: None,
             paused: true,
             cmd_tx,
-            queue: VecDeque::new()
+            queue_future: VecDeque::new(),
+            queue_past: VecDeque::new(),
         }));
 
         let audio_thread = start_audio_thread(cmd_rx, event_tx);
@@ -106,17 +132,25 @@ impl AudioTask {
     }
 
     pub fn stop(self) {
-        self.state.lock().unwrap().cmd_tx.send(AudioCommand::Quit).unwrap();
+        self.state
+            .lock()
+            .unwrap()
+            .cmd_tx
+            .send(AudioCommand::Quit)
+            .unwrap();
         stop_audio_thread(self.audio_thread);
         self.queue_task_handle.abort();
     }
 }
 
 async fn handle_audio_event(mut rx: Receiver<AudioEvent>, state: Arc<Mutex<AudioState>>) {
+    let mut interval = time::interval(Duration::from_millis(AUDIO_TASK_POLL_FREQ_MS));
+
     loop {
+        interval.tick().await;
         if let Ok(event) = rx.try_recv() {
             match event {
-                AudioEvent::Finished => debug!("event done"),
+                AudioEvent::Finished => state.lock().unwrap().next(),
                 _ => debug!("event ??"),
             }
         }

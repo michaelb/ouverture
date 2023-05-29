@@ -174,6 +174,22 @@ impl<'a> Application for Ouverture {
                 debug!("GUI asked for toggle, server replied: {:?}", reply);
                 Message::Nothing
             }))),
+            Message::Next => Command::single(Action::Future(Box::pin(async move {
+                debug!("GUI asking for next");
+                let reply = Server::send_wait(&ServerCommand::Next, address)
+                    .await
+                    .unwrap();
+                debug!("GUI asked for next, server replied: {:?}", reply);
+                Message::Nothing
+            }))),
+            Message::Previous => Command::single(Action::Future(Box::pin(async move {
+                debug!("GUI asking for previous");
+                let reply = Server::send_wait(&ServerCommand::Previous, address)
+                    .await
+                    .unwrap();
+                debug!("GUI asked for previous, server replied: {:?}", reply);
+                Message::Nothing
+            }))),
             any => {
                 debug!("updating panes");
                 self.panes.update(any)

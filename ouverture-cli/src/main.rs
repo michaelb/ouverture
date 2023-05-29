@@ -35,6 +35,10 @@ struct Opt {
     #[structopt(long)]
     next: bool,
 
+    ///Play the next song
+    #[structopt(long)]
+    enqueue: Option<String>,
+
     ///Play the previous song
     #[structopt(long)]
     previous: bool,
@@ -122,6 +126,13 @@ async fn launch_command(opt: &Opt) -> Result<(), Box<dyn Error + Send + Sync>> {
         };
         handle(Server::send(&Command::Play(opt_song.clone()), &server_addr).await).await;
     }
+
+    if let Some(path) = opt.enqueue.as_ref() {
+        let path = PathBuf::from(path);
+        let song = Song::from_path(&path);
+        handle(Server::send(&Command::Enqueue(song.clone()), &server_addr).await).await;
+    }
+
     if opt.pause {
         handle(Server::send(&Command::Pause, &server_addr).await).await;
     }
