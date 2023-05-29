@@ -12,7 +12,7 @@ pub struct Panes {
 }
 
 use crate::Message;
-use log::{trace, debug, warn};
+use log::{debug, trace, warn};
 
 use std::any::Any;
 use std::rc::Rc;
@@ -30,9 +30,8 @@ pub enum PaneMessage {
     // for List
     AskRefreshList(pane_grid::Pane),
     ReceivedNewList(pane_grid::Pane, Rc<ouverture_core::server::Reply>),
-    ListMessage(list::ListMessage)
+    ListMessage(list::ListMessage),
 }
-
 
 impl Panes {
     pub fn new() -> Self {
@@ -155,7 +154,9 @@ impl Application for Panes {
                 if let Some((new_pane, _)) = result {
                     self.focus = Some(new_pane);
                     self.panes.close(&pane);
-                    return Command::single(Message::ChildMessage(PaneMessage::AskRefreshList(new_pane)).into());
+                    return Command::single(
+                        Message::ChildMessage(PaneMessage::AskRefreshList(new_pane)).into(),
+                    );
                 } else {
                     warn!("failed to close pane, keeping current one");
                 };
@@ -287,7 +288,6 @@ impl Content for Editor {
         self
     }
     fn view(&self, pane: pane_grid::Pane, total_panes: usize) -> Element<Message> {
-
         let mut controls = column![].spacing(5).max_width(150);
         controls = controls
             .push(button(text("-")).on_press(Message::Split(pane_grid::Axis::Horizontal, pane)))
