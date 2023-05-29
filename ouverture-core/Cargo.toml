@@ -26,7 +26,7 @@ log = "0.4"
 fern = { version = "0.6", features = ["colored"] }
 chrono = "0.4"
 
-pg-embed = { path = "../../pg-embed"}
+pg-embed = "0.7.1"
 
 tokio = { version = "1.17.0", features = ["full"] }
 
