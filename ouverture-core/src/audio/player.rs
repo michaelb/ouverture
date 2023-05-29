@@ -15,9 +15,9 @@ use super::output;
 
 use std::time;
 
-use tokio::sync::broadcast::{ Sender, Receiver};
 use rc_event_queue::mpmc::{DefaultSettings, EventQueue, EventReader};
 use rc_event_queue::prelude::*;
+use tokio::sync::broadcast::{Receiver, Sender};
 
 use std::thread;
 
@@ -60,8 +60,7 @@ impl std::fmt::Debug for AudioThread {
 }
 
 pub fn start_audio_thread(rx: Receiver<AudioCommand>, tx: Sender<AudioEvent>) -> AudioThread {
-
-    let handle = std::thread::spawn(|| audio_thread_fn(rx,tx));
+    let handle = std::thread::spawn(|| audio_thread_fn(rx, tx));
     debug!("audio thread started");
 
     AudioThread {
@@ -81,10 +80,7 @@ pub fn stop_audio_thread(audio_thread: AudioThread) {
 
 const AUDIO_THREAD_EQ_POLL_PERIOD_MS: u64 = 50;
 
-fn audio_thread_fn(
-    mut rx: Receiver<AudioCommand>,
-    tx: Sender<AudioEvent>,
-) {
+fn audio_thread_fn(mut rx: Receiver<AudioCommand>, tx: Sender<AudioEvent>) {
     let mut current_seek = 0;
     let mut current_song = None;
     let mut command_from_decode_loop: Option<AudioCommand> = None;
@@ -124,7 +120,10 @@ fn audio_thread_fn(
                 }
             }
             Some(Pause) => None,
-            Some(Pause) => {current_song = None; None},
+            Some(Pause) => {
+                current_song = None;
+                None
+            }
             _ => unimplemented!(),
         }
     }
@@ -256,8 +255,8 @@ pub fn decode(
                     match rx.try_recv() {
                         Ok(Play) => (),
                         Ok(cmd) => return Some(cmd.clone()), // TODO exhaust the enum manually to avoid alloc in audio thread
-                        Err(_) => (), // most likely no new cmd
-                     }
+                        Err(_) => (),                        // most likely no new cmd
+                    }
                 }
                 Err(Error::IoError(_)) => {
                     // The packet failed to decode due to an IO error, skip the packet.

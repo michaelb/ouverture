@@ -29,7 +29,7 @@ use crate::audio::{
 pub struct Server {
     config: Config,
     audio_task: Option<AudioTask>, // this task has for only role to send queued songs to the audio thread
-                                   // when it finishes playing a song
+    // when it finishes playing a song
     state: Arc<Mutex<ServerState>>,
 }
 

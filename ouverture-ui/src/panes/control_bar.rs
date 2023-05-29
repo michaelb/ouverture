@@ -1,4 +1,4 @@
-use iced::{Element, Length, Command};
+use iced::{Command, Element, Length};
 
 use iced::widget::{button, container, pane_grid, row, text};
 
@@ -33,11 +33,11 @@ impl ControlBar {
             currently_playing: false,
         }
     }
-    fn update(&mut self, message:Message) -> Command<Message> {
+    fn update(&mut self, message: Message) -> Command<Message> {
         let address = "127.0.0.1:6603";
 
         match message {
-                        _ => Command::none()
+            _ => Command::none(),
         }
     }
 

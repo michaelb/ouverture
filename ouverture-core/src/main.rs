@@ -1,15 +1,15 @@
 extern crate ouverture_core;
 mod opt;
 
-use ouverture_core::server::{Command::Stop, Server};
 use color_eyre::eyre::eyre;
 use color_eyre::Result;
 use futures::stream::StreamExt;
 use log::LevelFilter::*;
 use log::{debug, warn};
-use ouverture_core::logger::{setup_logger, LogDestination::*};
 use opt::Opt;
 use ouverture_core::config::Config;
+use ouverture_core::logger::{setup_logger, LogDestination::*};
+use ouverture_core::server::{Command::Stop, Server};
 use ouverture_core::start;
 use signal_hook::consts::signal::*;
 use signal_hook_tokio::Signals;

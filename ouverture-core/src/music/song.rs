@@ -1,5 +1,5 @@
-use chrono::prelude::{DateTime, Local};
 use audiotags::Tag;
+use chrono::prelude::{DateTime, Local};
 use infer;
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
@@ -147,7 +147,7 @@ impl Song {
 
         if format == unsupported {
             // TODO reject the new song
-            warn!("format {} is not suported", kind.mime_type() );
+            warn!("format {} is not suported", kind.mime_type());
         }
 
         Song {
