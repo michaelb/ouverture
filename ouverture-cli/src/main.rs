@@ -43,6 +43,10 @@ struct Opt {
     #[structopt(long)]
     previous: bool,
 
+    ///Seek the current song to the given %
+    #[structopt(long)]
+    seek: Option<u64>,
+
     /// Scan the library
     #[structopt(long)]
     scan: bool,
@@ -148,8 +152,13 @@ async fn launch_command(opt: &Opt) -> Result<(), Box<dyn Error + Send + Sync>> {
     if opt.scan {
         handle(Server::send(&Command::Scan, &server_addr).await).await;
     }
+
+    if let Some(seek) = opt.seek {
+        handle(Server::send(&Command::Seek(std::cmp::min(seek,100) as f32 / 100f32), &server_addr).await).await;
+    }
+
     if let Some(optionnal_str) = opt.list.as_ref() {
-        handle(Server::send(&Command::List(optionnal_str.clone()), &server_addr).await).await;
+        handle(Server::send(&Command::GetList(optionnal_str.clone()), &server_addr).await).await;
     }
 
     if opt.ping {

@@ -4,6 +4,7 @@ use iced::{
     alignment::{Horizontal, Vertical},
     Command, Element, Length, Padding,
 };
+use iced_native::widget::button::{StyleSheet, Appearance};
 use log::{debug, trace};
 use std::string::ToString;
 use strum::Display;
@@ -20,10 +21,31 @@ use ouverture_core::server::Command as ServerCommand;
 use ouverture_core::server::Server;
 
 use iced::widget::button;
+use iced::{Background,Vector, Color, Theme};
+
+use crate::style::ThemeType;
 
 struct ListRow {
     title: String,
     artist: String,
+}
+
+#[derive(Default)]
+struct ListRowAppearance {
+
+}
+
+impl StyleSheet for ListRowAppearance {
+    type Style = Theme;
+
+    fn active(&self, style: &Self::Style) -> Appearance {
+
+        Appearance {
+            .. Default::default()
+        }
+    }
+
+
 }
 
 impl From<Song> for ListRow {
@@ -111,6 +133,7 @@ impl Content for List {
                     ListMessage::ClickRow(Some(i)),
                 )))
                 .height(Length::Fixed(30.0))
+                .style(iced::theme::Button::Secondary)
                 .padding(0);
             rows = rows.push(select_row_button);
         }
@@ -171,7 +194,7 @@ impl List {
         let address = "127.0.0.1:6603";
 
         Command::single(Action::Future(Box::pin(async move {
-            let reply = Server::send_wait(&ServerCommand::List(None), address)
+            let reply = Server::send_wait(&ServerCommand::GetList(None), address)
                 .await
                 .unwrap();
             debug!("asked for list refresh");

@@ -1,6 +1,7 @@
-use iced::{Application, Command, Element, Length, Settings};
+use iced::{Application, Command, Element, Length, Settings, Subscription};
 
 use iced::theme::Theme;
+use iced::time;
 
 use iced::widget::{container, pane_grid};
 
@@ -11,6 +12,8 @@ mod style;
 use config::Config;
 use style::ThemeType;
 pub mod panes;
+
+use std::time::{Duration, Instant};
 
 use ouverture_core::music::song::Song;
 
@@ -195,6 +198,10 @@ impl<'a> Application for Ouverture {
                 self.panes.update(any)
             }
         }
+    }
+
+    fn subscription(&self) -> Subscription<Message> {
+                time::every(Duration::from_millis(1000)).map(|i|Message::ChildMessage(PaneMessage::RefreshControl(i)))
     }
 
     fn view(&self) -> Element<Message> {

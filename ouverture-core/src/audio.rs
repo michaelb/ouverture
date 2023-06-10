@@ -3,7 +3,7 @@ mod player;
 
 use tokio::task::spawn;
 
-use log::debug;
+use log::{debug, warn, trace};
 use std::collections::VecDeque;
 use std::pin::Pin;
 use std::sync::{Arc, Mutex};
@@ -12,7 +12,7 @@ use crate::music::song::Song;
 
 use tokio::sync::broadcast::{channel, Receiver, Sender};
 use tokio::task::JoinHandle;
-use tokio::time::{self, Duration};
+use tokio::time::{self, Duration, Instant};
 
 pub use player::{start_audio_thread, stop_audio_thread, AudioThread};
 
@@ -36,11 +36,15 @@ pub fn audio_thread_stop(tx: &Sender<AudioCommand>) {
 #[derive(Clone)]
 pub struct AudioState {
     pub cmd_tx: Sender<AudioCommand>,
-    current_song: Option<Song>,
+    pub current_song: Option<Song>,
+    pub current_seek: f32,
     paused: bool,
+    events_received: u64, //count the number of event received
     queue_future: VecDeque<Song>,
     queue_past: VecDeque<Song>,
 }
+
+const AUDIO_GET_SEEK_POLL_FREQ_MS: u64 = 20;
 
 impl AudioState {
     pub fn play(&mut self, opt_song: Option<Song>) {
@@ -79,6 +83,9 @@ impl AudioState {
             }
             self.play(opt_song);
         } else {
+            if let Some(song) = &self.current_song {
+                self.queue_past.push_back(song.clone());
+            }
             audio_thread_stop(&self.cmd_tx);
             self.current_song = None;
             self.paused = true;
@@ -92,6 +99,34 @@ impl AudioState {
                 self.queue_future.push_front(current_song.clone());
             }
             self.play(opt_song);
+        }
+    }
+
+    pub async fn get_seek(audio_state: Arc<Mutex<AudioState>>) -> f32 {
+        let event_count_before = audio_state.lock().unwrap().events_received;
+        audio_thread_send_cmd(AudioCommand::GetSeek, &audio_state.lock().unwrap().cmd_tx);
+        let max_time_wait_for_seek = Duration::from_millis(AUDIO_TASK_POLL_FREQ_MS * 2);
+        let start = Instant::now();
+        while audio_state.lock().unwrap().events_received == event_count_before {
+            tokio::time::sleep(Duration::from_millis(AUDIO_GET_SEEK_POLL_FREQ_MS)).await;
+
+            if start.elapsed() >= max_time_wait_for_seek {
+                warn!("Timed out waiting for audio thread getting 'seek' !");
+                return 0.0;
+            }
+        }
+        debug!("received one audioevent: assuming it's the SeekIs response to our GetSeek and that current_seek got updated");
+        return audio_state.lock().unwrap().current_seek;
+    }
+
+    pub fn set_seek(&mut self, seek: f32) {
+        let was_paused = self.paused;
+        if !was_paused {
+            audio_thread_send_cmd(AudioCommand::Pause, &self.cmd_tx);
+        }
+        audio_thread_send_cmd(AudioCommand::Seek(seek), &self.cmd_tx);
+        if !was_paused {
+            audio_thread_send_cmd(AudioCommand::Play, &self.cmd_tx);
         }
     }
 }
@@ -116,6 +151,8 @@ impl AudioTask {
         let state = Arc::new(Mutex::new(AudioState {
             current_song: None,
             paused: true,
+            current_seek: 0.0,
+            events_received: 0,
             cmd_tx,
             queue_future: VecDeque::new(),
             queue_past: VecDeque::new(),
@@ -149,8 +186,16 @@ async fn handle_audio_event(mut rx: Receiver<AudioEvent>, state: Arc<Mutex<Audio
     loop {
         interval.tick().await;
         if let Ok(event) = rx.try_recv() {
+            state.lock().unwrap().events_received += 1;
             match event {
-                AudioEvent::Finished => state.lock().unwrap().next(),
+                AudioEvent::Finished => {
+                    debug!("finished song");
+                    state.lock().unwrap().next()
+                }
+                AudioEvent::SeekIs(value) => {
+                    debug!("set audiostate current seek to {value}");
+                    state.lock().unwrap().current_seek = value
+                }
                 _ => debug!("event ??"),
             }
         }

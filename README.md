@@ -89,4 +89,5 @@ Very much at Work-In-*Planning* stage now 😄
 
 ## Dependencies
 
- - postgresql (for libpq, as build dep?)
+ - $${\color{grey}postresql (automatically fetched from maven repos at compile time and embedded)}$$
+ - libpulse (Linux)

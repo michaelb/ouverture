@@ -49,7 +49,8 @@ futures-core="0.3.21"
 
 sea-orm = { version = "0.7", features = ["sqlx-postgres", "runtime-tokio-rustls", "macros" ], default-features = false }
 
-audiotags = "0.2"
+audiotags = "0.4.1"
+mp3-duration="0.1.10"
 infer = "0.7"
 symphonia = { version = "0.5.2", features= ["all"]}
 

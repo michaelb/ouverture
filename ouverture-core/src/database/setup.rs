@@ -5,6 +5,8 @@ use crate::music::song::{Song, SongSource};
 use sea_orm::prelude::*;
 use sea_orm::{entity::*, query::*};
 
+use std::time::Duration;
+
 use color_eyre::Result;
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel)]
@@ -16,6 +18,7 @@ pub struct Model {
     pub artist: Option<String>,
     pub album: Option<String>,
     pub source: Option<String>,
+    pub duration: i64, // duration of the song in milliseconds
 }
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
 pub enum Relation {}
@@ -42,11 +45,13 @@ pub async fn create_post_table(db: &DbConn) -> Result<ExecResult, DbErr> {
         .col(ColumnDef::new(Column::Artist).string())
         .col(ColumnDef::new(Column::Album).string())
         .col(ColumnDef::new(Column::Source).string())
+        .col(ColumnDef::new(Column::Duration).big_integer())
         .to_owned();
 
     create_table(db, &stmt).await
 }
 
+/// Convert a song into an insertable Model
 impl From<Song> for ActiveModel {
     fn from(s: Song) -> ActiveModel {
         ActiveModel {
@@ -57,6 +62,7 @@ impl From<Song> for ActiveModel {
                 None => None,
                 Some(source) => Some(source.into()),
             }),
+            duration : Set(s.duration.as_millis() as i64),
             ..Default::default()
         }
     }
@@ -72,6 +78,7 @@ impl From<Model> for Song {
                 None => None,
                 Some(source) => Some(source.into()),
             },
+            duration: Duration::from_millis(a.duration as u64),
             ..Default::default()
         }
     }

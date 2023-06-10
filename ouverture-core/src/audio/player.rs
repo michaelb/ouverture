@@ -28,6 +28,7 @@ use std::sync::Arc;
 pub enum AudioEvent {
     Finished,
     Failed,
+    SeekIs(f32),
 }
 
 // The audio thread responds immediately (or at least ASAP)
@@ -38,9 +39,14 @@ pub enum AudioCommand {
     Play,
     Pause,
     Stop, // pause and forget current song
-    Seek(f64),
-    Done, // signal the current song has finished playing
+
+    GetSeek,
+    Seek(f32),
+
     Quit, // quit loops and get ready to exit this thread
+
+    DoneOk,  // internal return status
+    DoneErr, // internal return status
 }
 use AudioCommand::*;
 
@@ -78,10 +84,28 @@ pub fn stop_audio_thread(audio_thread: AudioThread) {
     handle.join().unwrap();
 }
 
+// convert seek between 0 and 1 to u64 milliseconds value
+fn convert_seek_real_to_ms(seek_real: f32, opt_current_song: Option<Song>) -> u64 {
+    if let Some(current_song) = opt_current_song  {
+        return (current_song.duration.as_millis() * (seek_real * 1024f32) as u128 / 1024) as u64;
+    } else {
+        0
+    }
+}
+
+// convert seek between 0 and 1 to u64 milliseconds value
+fn convert_seek_ms_to_real(seek_ms: u64, opt_current_song: Option<Song>) -> f32 {
+    if let Some(current_song) = opt_current_song  {
+        return seek_ms as f32 / current_song.duration.as_millis() as f32;
+    } else {
+        0.0
+    }
+}
+
 const AUDIO_THREAD_EQ_POLL_PERIOD_MS: u64 = 50;
 
 fn audio_thread_fn(mut rx: Receiver<AudioCommand>, tx: Sender<AudioEvent>) {
-    let mut current_seek = 0;
+    let mut current_seek_ms = 0; //current seek in milliseconds
     let mut current_song = None;
     let mut command_from_decode_loop: Option<AudioCommand> = None;
     loop {
@@ -104,27 +128,59 @@ fn audio_thread_fn(mut rx: Receiver<AudioCommand>, tx: Sender<AudioEvent>) {
             Some(Quit) => break,
             Some(PlayNew(song)) => {
                 current_song = Some(song.clone());
-                current_seek = 0;
-                decode(&song, &mut rx, &mut current_seek)
+                current_seek_ms = 0;
+                match decode(&song, &mut rx, &tx, &mut current_seek_ms) {
+                    Some(DoneOk) => {
+                        tx.send(AudioEvent::Finished).unwrap();
+                        None
+                    }
+                    Some(DoneErr) => {
+                        tx.send(AudioEvent::Failed).unwrap();
+                        None
+                    }
+                    _ => None,
+                }
             }
             Some(Play) => {
                 if let Some(song) = &current_song {
                     debug!(
-                        "resuming play of current song: {:?} at seek {current_seek}",
+                        "resuming play of current song: {:?} at seek {current_seek_ms}",
                         song
                     );
-                    decode(&song, &mut rx, &mut current_seek)
+                    match decode(&song, &mut rx, &tx, &mut current_seek_ms) {
+                        Some(DoneOk) => {
+                            tx.send(AudioEvent::Finished).unwrap();
+                            None
+                        }
+                        Some(DoneErr) => {
+                            tx.send(AudioEvent::Failed).unwrap();
+                            None
+                        }
+                        _ => None,
+                    }
                 } else {
                     warn!("Play requested but no current song");
                     None
                 }
             }
-            Some(Pause) => None,
             Some(Pause) => {
+                None
+            }
+            Some(Stop) => {
                 current_song = None;
                 None
             }
-            _ => unimplemented!(),
+            Some(GetSeek) => {
+                tx.send(AudioEvent::SeekIs(convert_seek_ms_to_real(current_seek_ms, current_song.clone()))).unwrap();
+                None
+            }
+            Some(Seek(seek)) => {
+                current_seek_ms = convert_seek_real_to_ms(seek, current_song.clone());
+                debug!("seeked audio thread to : {current_seek_ms} ms");
+                None
+            }
+            Some(DoneOk) => panic!(),
+            Some(DoneErr) => panic!(),
         }
     }
 }
@@ -132,6 +188,7 @@ fn audio_thread_fn(mut rx: Receiver<AudioCommand>, tx: Sender<AudioEvent>) {
 pub fn decode(
     song: &Song,
     rx: &mut Receiver<AudioCommand>,
+    tx: &Sender<AudioEvent>,
     seek: &mut u64,
 ) -> Option<AudioCommand> {
     if let Some(SongSource::FilePath(song_source_filepath)) = song.clone().source {
@@ -180,7 +237,7 @@ pub fn decode(
         let no_progress = false;
 
         // Get the selected track's timebase and duration.
-        let tb = track.codec_params.time_base;
+        let tb = track.codec_params.time_base.unwrap();
         let dur = track
             .codec_params
             .n_frames
@@ -198,6 +255,7 @@ pub fn decode(
                     // for chained OGG physical streams.
                     unimplemented!();
                 }
+
                 Err(err) => {
                     // A unrecoverable error occured, halt decoding.
                     break Err(err);
@@ -238,7 +296,7 @@ pub fn decode(
                     }
                     // Write the decoded audio samples to the audio output if the presentation timestamp
                     // for the packet is >= the seeked position (0 if not seeking).
-                    if packet.ts() >= *seek {
+                    if packet.ts() * 1000 * (tb.numer as u64) / (tb.denom as u64) >= *seek {
                         if !no_progress {
                             print_progress(packet.ts(), dur, tb);
                         }
@@ -248,12 +306,16 @@ pub fn decode(
                         }
 
                         // update seek time
-                        *seek = packet.ts();
+                        *seek = packet.ts() * 1000 * (tb.numer as u64) / (tb.denom as u64);
                     }
 
                     // check for any command
                     match rx.try_recv() {
                         Ok(Play) => (),
+                        Ok(GetSeek) => {
+                            tx.send(AudioEvent::SeekIs(convert_seek_ms_to_real(*seek, Some(song.clone())))).unwrap();
+                            ()
+                        }
                         Ok(cmd) => return Some(cmd.clone()), // TODO exhaust the enum manually to avoid alloc in audio thread
                         Err(_) => (),                        // most likely no new cmd
                     }
@@ -274,12 +336,23 @@ pub fn decode(
         }; // EOL
         info!("result playing track: {:?}", result);
         *seek = 0; // reset seek time
-    }
-    info!("song does not have local filepath ({:?})", song);
 
-    return None;
+        match result {
+            Err(Error::IoError(io_error)) => match io_error.kind() {
+                // finished reading & playing the song
+                std::io::ErrorKind::UnexpectedEof => return Some(DoneOk),
+                _ => return Some(DoneErr),
+            },
+            Err(_) => return Some(DoneErr),
+            Ok(_) => panic!(), // should be unreachable
+        }
+    } else {
+        info!("song does not have local filepath ({:?})", song);
+
+        return Some(DoneErr);
+    }
 }
 
-fn print_progress(ts: u64, dur: Option<u64>, tb: Option<TimeBase>) {
+fn print_progress(ts: u64, dur: Option<u64>, tb: TimeBase) {
     //debug!("progressing");
 }

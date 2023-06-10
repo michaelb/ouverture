@@ -1,5 +1,5 @@
 use iced::theme::{self, Theme};
-use iced_native::Color;
+use iced::Color;
 
 pub fn hex_to_color(hex: &str) -> Option<Color> {
     if hex.len() == 7 {
@@ -22,10 +22,10 @@ pub fn hex_to_color(hex: &str) -> Option<Color> {
     None
 }
 
-pub fn color_to_hex(color: &iced_native::Color) -> String {
+pub fn color_to_hex(color: &iced::Color) -> String {
     let mut color_str = String::from("#");
 
-    let iced_native::Color { r, g, b, .. } = color;
+    let iced::Color { r, g, b, .. } = color;
     color_str.push_str(&format!("{:02X}", (r * 255.0) as u8));
     color_str.push_str(&format!("{:02X}", (g * 255.0) as u8));
     color_str.push_str(&format!("{:02X}", (b * 255.0) as u8));

@@ -159,7 +159,7 @@ impl Server {
             Command::Previous => audio_state.lock().unwrap().previous(),
 
             Command::Scan => scan(&config).await,
-            Command::List(i) => {
+            Command::GetList(i) => {
                 let list = list(&config, i).await;
                 match Self::reply(Reply::List(list), &mut socket).await {
                     Ok(_) => trace!("Replied 'list' successfully"),
@@ -168,6 +168,19 @@ impl Server {
                     }
                 }
             }
+
+            Command::GetCurrentSong => {
+                let current_song = audio_state.lock().unwrap().current_song.clone();
+                let current_seek = AudioState::get_seek(audio_state).await;
+                match Self::reply(Reply::CurrentSong(current_song.clone(), current_seek), &mut socket).await {
+                    Ok(_) => trace!("Replied 'current song is {current_song:?}' (seek = {}%) successfully", current_seek * 100.0),
+                    Err(e) => {
+                        warn!("Failed to send 'list' reply to client: {:?}", e)
+                    }
+                }
+            }
+
+            Command::Seek(seek) => audio_state.lock().unwrap().set_seek(seek),
 
             Command::Ping => (),
             Command::Restart => (),
@@ -284,10 +297,15 @@ pub enum Command {
     Next,
     Previous,
     Enqueue(Song),
+    Seek(f32),
 
     // "Library" commands
     Scan,
-    List(Option<String>),
+
+    // "Get info" commands
+    GetList(Option<String>),
+    GetCurrentSong,
+    
 
     // "Server" commands
     Ping,
@@ -295,11 +313,15 @@ pub enum Command {
     Stop,
 }
 
+
+
+
 #[non_exhaustive]
-#[derive(Display, Debug, Serialize, Deserialize, EnumString, EnumIter)]
+#[derive(Display, Debug, Serialize, Deserialize, EnumString, EnumIter, Clone)]
 pub enum Reply {
     Received(String),
     List(Vec<Song>),
+    CurrentSong(Option<Song>, f32), // current song and current seek
     Done,
 }
 

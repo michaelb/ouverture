@@ -1,4 +1,5 @@
 use audiotags::Tag;
+use mp3_duration;
 use chrono::prelude::{DateTime, Local};
 use infer;
 use serde::{Deserialize, Serialize};
@@ -149,12 +150,23 @@ impl Song {
             // TODO reject the new song
             warn!("format {} is not suported", kind.mime_type());
         }
+        let duration;
+        if let Some(d) = tag.duration() {
+            duration = Duration::from_secs(d as u64);
+        } else if let Ok(d) = mp3_duration::from_path(path) {
+            duration = d;
+        } else {
+            warn!("Could not determine duration of sonn from path {:?}", path);
+            duration = Duration::from_secs(0);
+        }
+
 
         Song {
             source: Some(FilePath(path.to_path_buf())),
             title: tag.title().map(|s| s.into()),
             artist: tag.artists().map(|v| v[0].to_string()),
             album: tag.album().map(|a| a.title.to_string()),
+            duration,
             format,
 
             ..Default::default()

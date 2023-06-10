@@ -6,8 +6,9 @@ use iced::theme::Theme;
 use fixedstr::str32;
 use log::warn;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct ThemeType(str32);
+
 
 impl Into<Theme> for ThemeType {
     fn into(self) -> Theme {
@@ -20,6 +21,7 @@ impl Into<Theme> for ThemeType {
         Theme::default()
     }
 }
+
 
 impl Into<ThemeType> for String {
     fn into(self) -> ThemeType {

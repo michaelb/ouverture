@@ -21,6 +21,10 @@ mod control_bar;
 // pub mod list;
 pub mod list;
 mod menu;
+use ouverture_core::music::song::Song;
+
+
+use std::time::{Duration, Instant};
 
 #[derive(Debug, Clone)]
 pub enum PaneMessage {
@@ -31,6 +35,12 @@ pub enum PaneMessage {
     AskRefreshList(pane_grid::Pane),
     ReceivedNewList(pane_grid::Pane, Rc<ouverture_core::server::Reply>),
     ListMessage(list::ListMessage),
+    ReceivedNewCurrentSong(Option<Song>, f32),
+
+    SliderChanged(u32), // changed by user, seek song to new position
+    SliderChangedAuto(u32), // updated by server, don't seek new position
+    RefreshControl(Instant),
+    
 }
 
 impl Panes {
