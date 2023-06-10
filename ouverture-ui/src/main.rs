@@ -201,7 +201,8 @@ impl<'a> Application for Ouverture {
     }
 
     fn subscription(&self) -> Subscription<Message> {
-                time::every(Duration::from_millis(1000)).map(|i|Message::ChildMessage(PaneMessage::RefreshControl(i)))
+        time::every(Duration::from_millis(1000))
+            .map(|i| Message::ChildMessage(PaneMessage::RefreshControl(i)))
     }
 
     fn view(&self) -> Element<Message> {

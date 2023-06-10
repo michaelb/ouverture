@@ -86,7 +86,7 @@ pub fn stop_audio_thread(audio_thread: AudioThread) {
 
 // convert seek between 0 and 1 to u64 milliseconds value
 fn convert_seek_real_to_ms(seek_real: f32, opt_current_song: Option<Song>) -> u64 {
-    if let Some(current_song) = opt_current_song  {
+    if let Some(current_song) = opt_current_song {
         return (current_song.duration.as_millis() * (seek_real * 1024f32) as u128 / 1024) as u64;
     } else {
         0
@@ -95,7 +95,7 @@ fn convert_seek_real_to_ms(seek_real: f32, opt_current_song: Option<Song>) -> u6
 
 // convert seek between 0 and 1 to u64 milliseconds value
 fn convert_seek_ms_to_real(seek_ms: u64, opt_current_song: Option<Song>) -> f32 {
-    if let Some(current_song) = opt_current_song  {
+    if let Some(current_song) = opt_current_song {
         return seek_ms as f32 / current_song.duration.as_millis() as f32;
     } else {
         0.0
@@ -163,15 +163,17 @@ fn audio_thread_fn(mut rx: Receiver<AudioCommand>, tx: Sender<AudioEvent>) {
                     None
                 }
             }
-            Some(Pause) => {
-                None
-            }
+            Some(Pause) => None,
             Some(Stop) => {
                 current_song = None;
                 None
             }
             Some(GetSeek) => {
-                tx.send(AudioEvent::SeekIs(convert_seek_ms_to_real(current_seek_ms, current_song.clone()))).unwrap();
+                tx.send(AudioEvent::SeekIs(convert_seek_ms_to_real(
+                    current_seek_ms,
+                    current_song.clone(),
+                )))
+                .unwrap();
                 None
             }
             Some(Seek(seek)) => {
@@ -313,7 +315,11 @@ pub fn decode(
                     match rx.try_recv() {
                         Ok(Play) => (),
                         Ok(GetSeek) => {
-                            tx.send(AudioEvent::SeekIs(convert_seek_ms_to_real(*seek, Some(song.clone())))).unwrap();
+                            tx.send(AudioEvent::SeekIs(convert_seek_ms_to_real(
+                                *seek,
+                                Some(song.clone()),
+                            )))
+                            .unwrap();
                             ()
                         }
                         Ok(cmd) => return Some(cmd.clone()), // TODO exhaust the enum manually to avoid alloc in audio thread

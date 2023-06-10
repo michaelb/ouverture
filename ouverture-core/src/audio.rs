@@ -3,7 +3,7 @@ mod player;
 
 use tokio::task::spawn;
 
-use log::{debug, warn, trace};
+use log::{debug, trace, warn};
 use std::collections::VecDeque;
 use std::pin::Pin;
 use std::sync::{Arc, Mutex};

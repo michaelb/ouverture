@@ -62,7 +62,7 @@ impl From<Song> for ActiveModel {
                 None => None,
                 Some(source) => Some(source.into()),
             }),
-            duration : Set(s.duration.as_millis() as i64),
+            duration: Set(s.duration.as_millis() as i64),
             ..Default::default()
         }
     }
