@@ -22,5 +22,5 @@ pub struct Opt {
 
     /// Launch the server or connect to an independent one
     #[structopt(short, long)]
-    pub external_server: bool
+    pub external_server: bool,
 }

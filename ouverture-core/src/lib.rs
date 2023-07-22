@@ -11,29 +11,28 @@ use server::Server;
 
 use std::sync::{Arc, Mutex};
 
-use server::{Command::Stop};
+use server::Command::Stop;
 
 use futures::stream::StreamExt;
 
+use database::*;
 use signal_hook::consts::signal::*;
 use signal_hook_tokio::Signals;
-use database::*;
 
 use color_eyre::{eyre::eyre, Result};
-use log::{debug, error, info, warn, trace};
+use log::{debug, error, info, trace, warn};
 
 use daemonize::Daemonize;
 
 #[tokio::main]
 pub async fn start_with_handlers(config: Config) -> Result<()> {
-   // Set up signal handlers
+    // Set up signal handlers
     let first_signal = Arc::new(Mutex::new(true));
     let address = config.server_address.clone() + ":" + &config.server_port.to_string();
     let signals = Signals::new(&[SIGTERM, SIGINT, SIGQUIT])?;
     let handle = signals.handle();
 
     let signals_task = tokio::spawn(handle_signals(signals, address, first_signal.clone()));
-
 
     // Start ouverture server (unique async entry point)
     let res = start(config).await;
@@ -53,7 +52,6 @@ pub async fn start_with_handlers(config: Config) -> Result<()> {
         std::process::exit(1);
     }
     return return_value;
-
 }
 
 pub async fn start(config: Config) -> Result<()> {

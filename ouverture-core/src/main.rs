@@ -5,7 +5,7 @@ use color_eyre::eyre::eyre;
 use color_eyre::Result;
 use futures::stream::StreamExt;
 use log::LevelFilter::*;
-use log::{debug, error, info, warn, trace};
+use log::{debug, error, info, trace, warn};
 use opt::Opt;
 use ouverture_core::config::Config;
 use ouverture_core::logger::{setup_logger, LogDestination::*};
@@ -21,7 +21,6 @@ fn main() -> Result<()> {
 
     let opts = Opt::from_args();
     debug!("Opts = {:?}", opts);
-
 
     let level = match opts.log_level.as_deref() {
         None => Info,
@@ -55,10 +54,7 @@ fn main() -> Result<()> {
         }
     }
 
-
     debug!("Config : {:?}", config);
 
     ouverture_core::start_with_handlers(config)
-
 }
-

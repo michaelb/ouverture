@@ -75,18 +75,20 @@ fn main() -> iced::Result {
                     None => ouverture_core::config::Config::default(),
                     Some(path) => {
                         let c = ouverture_core::config::Config::new_from_file(&path);
-                            c.unwrap_or_else(|_| {
-                                error!("Could not create config from the provided file {:?}", &path);
-                                ouverture_core::config::Config::default()
-                            })
+                        c.unwrap_or_else(|_| {
+                            error!("Could not create config from the provided file {:?}", &path);
+                            ouverture_core::config::Config::default()
+                        })
                     }
                 };
 
                 if config.background {
                     let daemonize = Daemonize::new();
                     match daemonize.start() {
-                        Ok(_) => info!("Successfully forked ouverture-server process to the background"),
-                        Err(_) => error!("Failed to daemonize ouverture-server")
+                        Ok(_) => {
+                            info!("Successfully forked ouverture-server process to the background")
+                        }
+                        Err(_) => error!("Failed to daemonize ouverture-server"),
                     }
                 }
                 let res = ouverture_core::start_with_handlers(config);
