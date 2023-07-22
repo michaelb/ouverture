@@ -154,7 +154,14 @@ async fn launch_command(opt: &Opt) -> Result<(), Box<dyn Error + Send + Sync>> {
     }
 
     if let Some(seek) = opt.seek {
-        handle(Server::send(&Command::Seek(std::cmp::min(seek,100) as f32 / 100f32), &server_addr).await).await;
+        handle(
+            Server::send(
+                &Command::Seek(std::cmp::min(seek, 100) as f32 / 100f32),
+                &server_addr,
+            )
+            .await,
+        )
+        .await;
     }
 
     if let Some(optionnal_str) = opt.list.as_ref() {

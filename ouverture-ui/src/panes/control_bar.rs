@@ -70,7 +70,9 @@ impl ControlBar {
         if let Some(seek) = opt_seek {
             self.slider_value = (seek * 4096f32) as u32;
         }
-        Command::single(Message::ChildMessage(PaneMessage::SliderChangedAuto(self.slider_value)).into())
+        Command::single(
+            Message::ChildMessage(PaneMessage::SliderChangedAuto(self.slider_value)).into(),
+        )
     }
 }
 

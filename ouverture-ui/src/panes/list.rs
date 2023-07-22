@@ -4,7 +4,7 @@ use iced::{
     alignment::{Horizontal, Vertical},
     Command, Element, Length, Padding,
 };
-use iced_native::widget::button::{StyleSheet, Appearance};
+use iced_native::widget::button::{Appearance, StyleSheet};
 use log::{debug, trace};
 use std::string::ToString;
 use strum::Display;
@@ -21,7 +21,7 @@ use ouverture_core::server::Command as ServerCommand;
 use ouverture_core::server::Server;
 
 use iced::widget::button;
-use iced::{Background,Vector, Color, Theme};
+use iced::{Background, Color, Theme, Vector};
 
 use crate::style::ThemeType;
 
@@ -31,21 +31,16 @@ struct ListRow {
 }
 
 #[derive(Default)]
-struct ListRowAppearance {
-
-}
+struct ListRowAppearance {}
 
 impl StyleSheet for ListRowAppearance {
     type Style = Theme;
 
     fn active(&self, style: &Self::Style) -> Appearance {
-
         Appearance {
-            .. Default::default()
+            ..Default::default()
         }
     }
-
-
 }
 
 impl From<Song> for ListRow {

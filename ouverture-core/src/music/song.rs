@@ -1,7 +1,7 @@
 use audiotags::Tag;
-use mp3_duration;
 use chrono::prelude::{DateTime, Local};
 use infer;
+use mp3_duration;
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 use std::time::Duration;
@@ -159,7 +159,6 @@ impl Song {
             warn!("Could not determine duration of sonn from path {:?}", path);
             duration = Duration::from_secs(0);
         }
-
 
         Song {
             source: Some(FilePath(path.to_path_buf())),

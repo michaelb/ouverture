@@ -172,8 +172,16 @@ impl Server {
             Command::GetCurrentSong => {
                 let current_song = audio_state.lock().unwrap().current_song.clone();
                 let current_seek = AudioState::get_seek(audio_state).await;
-                match Self::reply(Reply::CurrentSong(current_song.clone(), current_seek), &mut socket).await {
-                    Ok(_) => trace!("Replied 'current song is {current_song:?}' (seek = {}%) successfully", current_seek * 100.0),
+                match Self::reply(
+                    Reply::CurrentSong(current_song.clone(), current_seek),
+                    &mut socket,
+                )
+                .await
+                {
+                    Ok(_) => trace!(
+                        "Replied 'current song is {current_song:?}' (seek = {}%) successfully",
+                        current_seek * 100.0
+                    ),
                     Err(e) => {
                         warn!("Failed to send 'list' reply to client: {:?}", e)
                     }
@@ -305,16 +313,12 @@ pub enum Command {
     // "Get info" commands
     GetList(Option<String>),
     GetCurrentSong,
-    
 
     // "Server" commands
     Ping,
     Restart,
     Stop,
 }
-
-
-
 
 #[non_exhaustive]
 #[derive(Display, Debug, Serialize, Deserialize, EnumString, EnumIter, Clone)]
