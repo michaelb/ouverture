@@ -5,23 +5,24 @@ use color_eyre::eyre::eyre;
 use color_eyre::Result;
 use futures::stream::StreamExt;
 use log::LevelFilter::*;
-use log::{debug, warn};
+use log::{debug, error, info, warn, trace};
 use opt::Opt;
 use ouverture_core::config::Config;
 use ouverture_core::logger::{setup_logger, LogDestination::*};
-use ouverture_core::server::{Command::Stop, Server};
 use ouverture_core::start;
-use signal_hook::consts::signal::*;
-use signal_hook_tokio::Signals;
-use std::sync::{Arc, Mutex};
 use structopt::StructOpt;
 
-#[tokio::main]
-async fn main() -> Result<()> {
-    // Setup color_eyre manager
+use daemonize::Daemonize;
+
+fn main() -> Result<()> {
+    // Setup color_eyre err manager
+
     color_eyre::install()?;
 
     let opts = Opt::from_args();
+    debug!("Opts = {:?}", opts);
+
+
     let level = match opts.log_level.as_deref() {
         None => Info,
         Some("trace") => Trace,
@@ -37,55 +38,27 @@ async fn main() -> Result<()> {
         None => setup_logger(StdErr, level)?,
         Some(path) => setup_logger(File(path), level)?,
     };
-    debug!("Opts = {:?}", opts);
     // let config = config::Config::new_from_file(config_path).unwrap();
-    let config = match opts.config {
+    let mut config = match opts.config {
         None => Config::default(),
         Some(path) => Config::new_from_file(&path)?,
     };
+
+    config.background = opts.background;
+
+    if opts.background {
+        let daemonize =
+            Daemonize::new().working_directory(std::env::current_dir().unwrap_or("/tmp".into()));
+        match daemonize.start() {
+            Ok(_) => info!("Successfully forked ouverture-server process to the background"),
+            Err(_) => error!("Failed to daemonize ouverture-server"),
+        }
+    }
+
+
     debug!("Config : {:?}", config);
 
-    // Set up signal handlers
-    let first_signal = Arc::new(Mutex::new(true));
-    let address = config.server_address.clone() + ":" + &config.server_port.to_string();
-    let signals = Signals::new(&[SIGTERM, SIGINT, SIGQUIT])?;
-    let handle = signals.handle();
-    let signals_task = tokio::spawn(handle_signals(signals, address, first_signal.clone()));
+    ouverture_core::start_with_handlers(config)
 
-    // Start ouverture server (unique async entry point)
-    let res = start(config).await;
-    let return_value = match res {
-        Err(e) => {
-            warn!("Server exited with an error: {:?}", e);
-            Err(eyre!(format!("{:?}", e)))
-        }
-        _ => Ok(()),
-    };
-
-    handle.close();
-    signals_task.await?;
-
-    // If a stop signal was received, exit with non-zero status
-    if !*first_signal.lock().unwrap() {
-        std::process::exit(1);
-    }
-    return_value
 }
 
-async fn handle_signals(signals: Signals, address: String, first_signal: Arc<Mutex<bool>>) {
-    let mut signals = signals.fuse();
-    while let Some(signal) = signals.next().await {
-        match signal {
-            SIGTERM | SIGINT | SIGQUIT => {
-                // Shutdown the system;
-                if *first_signal.lock().unwrap() {
-                    *first_signal.lock().unwrap() = false;
-                    let _ = Server::send_wait(&Stop, &address).await;
-                } else {
-                    std::process::exit(signal);
-                }
-            }
-            _ => unreachable!(),
-        }
-    }
-}

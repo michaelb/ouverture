@@ -19,4 +19,8 @@ pub struct Opt {
     /// Config path
     #[structopt(short, long)]
     pub config: Option<PathBuf>,
+
+    /// Launch the server or connect to an independent one
+    #[structopt(short, long)]
+    pub external_server: bool
 }

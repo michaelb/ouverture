@@ -15,7 +15,9 @@ pub mod panes;
 
 use std::time::{Duration, Instant};
 
+use ouverture_core::config::Config as ServerConfig;
 use ouverture_core::music::song::Song;
+use ouverture_core::start;
 
 use panes::list;
 use std::error::Error;
@@ -31,16 +33,23 @@ use std::convert::Into;
 use std::path::{Path, PathBuf};
 
 use ouverture_core::server::{Command as ServerCommand, Reply, Server};
+use ouverture_core::start_with_handlers;
 
 use futures_core::stream::Stream;
 use futures_util::pin_mut;
 use futures_util::stream::StreamExt;
 
-use log::{debug, info, warn};
+use log::{debug, error, info, warn};
 use panes::{Content, PaneMessage};
+
+use nix::unistd::ForkResult::{Child, Parent};
+use nix::unistd::{fork, getpid, getppid};
+
+use daemonize::Daemonize;
 
 fn main() -> iced::Result {
     let opts = Opt::from_args();
+    debug!("Opts = {:?}", opts);
     let level = match opts.log_level.as_deref() {
         None => Info,
         Some("trace") => Trace,
@@ -51,12 +60,42 @@ fn main() -> iced::Result {
         Some("off") => Off,
         Some(_) => Info, // unreachable because of the arg parser
     };
+
     match opts.log_destination.clone() {
         None => setup_logger(StdErr, level),
         Some(path) => setup_logger(File(path), level),
     }
     .unwrap();
-    debug!("Opts = {:?}", opts);
+
+    if !opts.external_server {
+        let pid = fork();
+        match pid.expect("Fork Failed: Unable to create child process!") {
+            Child => {
+                let config = match opts.config {
+                    None => ouverture_core::config::Config::default(),
+                    Some(path) => {
+                        let c = ouverture_core::config::Config::new_from_file(&path);
+                            c.unwrap_or_else(|_| {
+                                error!("Could not create config from the provided file {:?}", &path);
+                                ouverture_core::config::Config::default()
+                            })
+                    }
+                };
+
+                if config.background {
+                    let daemonize = Daemonize::new();
+                    match daemonize.start() {
+                        Ok(_) => info!("Successfully forked ouverture-server process to the background"),
+                        Err(_) => error!("Failed to daemonize ouverture-server")
+                    }
+                }
+                let res = ouverture_core::start_with_handlers(config);
+                info!("ouverture server launched/ran: {:?}", res);
+                return Ok(());
+            }
+            Parent { child: _ } => info!("forked ouverture into server and UI processes"),
+        }
+    }
 
     Ouverture::run(Settings::with_flags(opts))
 }
@@ -146,6 +185,10 @@ impl<'a> Application for Ouverture {
     type Theme = Theme;
 
     fn new(flags: Self::Flags) -> (Self, Command<Message>) {
+        if let Some(config_path) = flags.config.clone() {
+            info!("Using custom config path: {config_path:?}");
+            let read_config = Config::new(&config_path);
+        }
         (Ouverture::from_config(flags.config), Command::none())
     }
 
@@ -201,7 +244,8 @@ impl<'a> Application for Ouverture {
     }
 
     fn subscription(&self) -> Subscription<Message> {
-                time::every(Duration::from_millis(1000)).map(|i|Message::ChildMessage(PaneMessage::RefreshControl(i)))
+        time::every(Duration::from_millis(1000))
+            .map(|i| Message::ChildMessage(PaneMessage::RefreshControl(i)))
     }
 
     fn view(&self) -> Element<Message> {
