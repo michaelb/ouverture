@@ -14,7 +14,7 @@ pub struct ControlBar {
     slider_value: u32,
     current_song_length: Option<u64>, // length in milliseconds
 }
-use iced_native::command::Action;
+use iced_runtime::command::Action;
 
 use ouverture_core::server::Command as ServerCommand;
 use ouverture_core::server::Server;

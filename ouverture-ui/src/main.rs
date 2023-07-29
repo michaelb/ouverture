@@ -5,7 +5,7 @@ use iced::time;
 
 use iced::widget::{container, pane_grid};
 
-use iced_native::command::Action;
+use iced_runtime::command::Action;
 mod config;
 mod opt;
 mod style;

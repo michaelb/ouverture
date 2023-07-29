@@ -127,7 +127,11 @@ impl Application for Panes {
                 self.panes.resize(&split, ratio);
             }
             Dragged(pane_grid::DragEvent::Dropped { pane, target }) => {
-                self.panes.swap(&pane, &target);
+                if let iced::widget::pane_grid::Target::Pane(dest_pane, _region) = &target {
+                    self.panes.swap(&pane, &dest_pane);
+                } else {
+                    debug!("dragged a pane on an edge: doing nothing");
+                }
             }
             Dragged(_) => {}
             Close(pane) => {
