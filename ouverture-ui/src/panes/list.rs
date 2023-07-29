@@ -54,9 +54,7 @@ impl From<Song> for ListRow {
 
 impl ListRow {
     fn view(&self) -> Element<Message> {
-        let r = row![text(self.title.clone()), text(self.artist.clone())]
-            .spacing(5)
-            .width(150);
+        let r = row![text(self.title.clone()), text(self.artist.clone())];
         return r.into();
     }
 }
@@ -85,7 +83,7 @@ impl Content for List {
     fn view(&self, _pane: pane_grid::Pane, _total_panes: usize) -> Element<Message> {
         let heading_button = |button_text: &str, sort_order: Option<ColumnField>| {
             let mut button =
-                button(text(button_text).vertical_alignment(Vertical::Center)).padding(0);
+                button(text(button_text).vertical_alignment(Vertical::Center));
             if let Some(order) = sort_order {
                 button = button.on_press(Message::ChildMessage(PaneMessage::ListMessage(
                     ListMessage::Sort(order),
@@ -97,7 +95,6 @@ impl Content for List {
         const ICON_COLUMN_WIDTH: f32 = 35.0;
         let header = container({
             let mut header_row = row![]
-                .width(Length::Fill)
                 .height(Length::Fixed(30.0))
                 // Spacer heading for icons column
                 .push(heading_button("X", None).width(Length::Fixed(ICON_COLUMN_WIDTH)));
@@ -108,13 +105,12 @@ impl Content for List {
             }
             header_row
         })
-        .padding(Padding::from([0, 8]))
         .width(Length::Fill);
 
         let mut rows = column![];
         for (i, s) in self.rows.iter().enumerate() {
             let e: ListRow = s.clone().0.into();
-            let mut r = row![text("X").width(Length::Fixed(ICON_COLUMN_WIDTH))].spacing(5);
+            let mut r = row![text("X").width(Length::Fixed(ICON_COLUMN_WIDTH))];
             for c in &self.columns {
                 let field_content = match c.0 {
                     ColumnField::Title => e.title.clone(),
@@ -123,13 +119,17 @@ impl Content for List {
                 };
                 r = r.push(text(field_content).width(Length::Fixed(c.1)));
             }
-            let select_row_button = button(container(r).padding(Padding::from([0, 8])))
+            let button_theme = if i % 2 == 0 {
+                iced::theme::Button::Secondary
+            } else {
+                iced::theme::Button::Secondary // TODO custom theme for alternating colors in list
+            };
+            let select_row_button = button(r)
                 .on_press(Message::ChildMessage(PaneMessage::ListMessage(
                     ListMessage::ClickRow(Some(i)),
                 )))
                 .height(Length::Fixed(30.0))
-                .style(iced::theme::Button::Secondary)
-                .padding(0);
+                .style(button_theme);
             rows = rows.push(select_row_button);
         }
 
@@ -140,7 +140,6 @@ impl Content for List {
         container(header_and_list)
             .width(Length::Fill)
             .height(Length::Fill)
-            .padding(5)
             .into()
     }
 

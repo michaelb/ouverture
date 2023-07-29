@@ -67,11 +67,22 @@ fn main() -> iced::Result {
     }
     .unwrap();
 
-    if !opts.external_server {
+    let ui_config = match opts.config.clone() {
+        None => Config::default(),
+        Some(path) => {
+            let c = Config::new(&path);
+            c.unwrap_or_else(|_| {
+                error!("Could not create config from the provided file {:?}", &path);
+                Config::default()
+            })
+        }
+    };
+
+    if !ui_config.external_server {
         let pid = fork();
         match pid.expect("Fork Failed: Unable to create child process!") {
             Child => {
-                let config = match opts.config {
+                let server_config = match opts.config {
                     None => ouverture_core::config::Config::default(),
                     Some(path) => {
                         let c = ouverture_core::config::Config::new_from_file(&path);
@@ -82,7 +93,7 @@ fn main() -> iced::Result {
                     }
                 };
 
-                if config.background {
+                if server_config.background {
                     let daemonize = Daemonize::new();
                     match daemonize.start() {
                         Ok(_) => {
@@ -91,7 +102,7 @@ fn main() -> iced::Result {
                         Err(_) => error!("Failed to daemonize ouverture-server"),
                     }
                 }
-                let res = ouverture_core::start_with_handlers(config);
+                let res = ouverture_core::start_with_handlers(server_config);
                 info!("ouverture server launched/ran: {:?}", res);
                 return Ok(());
             }
