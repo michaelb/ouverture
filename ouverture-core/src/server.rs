@@ -19,6 +19,7 @@ use crate::audio::AudioState;
 
 use log::{debug, error, info, trace, warn};
 use std::pin::Pin;
+use tokio::runtime::Runtime;
 use tokio::sync::broadcast::{channel, Receiver, Sender};
 
 use crate::audio::{
@@ -237,6 +238,16 @@ impl Server {
             }
         }
         Err("Communication with the server failed".into())
+    }
+
+    // sync-callable version that creates its own tokio runtime
+    // to wait on tcp response stuff
+    pub fn send_wait_sync(
+        message: &Command,
+        address: &str,
+    ) -> Result<Reply, Box<dyn Error + Send + Sync>> {
+        let rt = Runtime::new().unwrap();
+        rt.block_on(Server::send_wait(message, address))
     }
 
     // send a command to the server and receive an stream to listen to the server's responses

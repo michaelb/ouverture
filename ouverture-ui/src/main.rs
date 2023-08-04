@@ -25,6 +25,7 @@ use std::error::Error;
 use opt::Opt;
 
 use ouverture_core::logger::{setup_logger, LogDestination::*};
+use ouverture_core::server::Command::Stop;
 
 use structopt::StructOpt;
 
@@ -103,14 +104,26 @@ fn main() -> iced::Result {
                     }
                 }
                 let res = ouverture_core::start_with_handlers(server_config);
-                info!("ouverture server launched/ran: {:?}", res);
+                info!("ouverture server exited: {:?}", res);
                 return Ok(());
             }
             Parent { child: _ } => info!("forked ouverture into server and UI processes"),
         }
     }
+    let mut s = Settings::with_flags(opts);
+    // s.exit_on_close_request = false;
 
-    Ouverture::run(Settings::with_flags(opts))
+    let res = Ouverture::run(s);
+
+    // when this finishes (may be due to a graphical kill)
+    // send a 'stop' command to the server
+    let address = ui_config.server_address + ":" + &ui_config.server_port.to_string();
+    let server_stop_res = Server::send_wait_sync(&Stop, &address);
+    match server_stop_res {
+        Ok(_) => info!("Server stopped gracefully"),
+        Err(e) => warn!("Failed to stop ouverture server at address {address}: {e:?}"),
+    }
+    return res;
 }
 
 #[derive(Default)]
