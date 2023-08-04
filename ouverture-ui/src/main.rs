@@ -13,6 +13,7 @@ use config::Config;
 use style::ThemeType;
 pub mod panes;
 
+use std::rc::Rc;
 use std::time::{Duration, Instant};
 
 use ouverture_core::config::Config as ServerConfig;
@@ -41,7 +42,6 @@ use futures_util::pin_mut;
 use futures_util::stream::StreamExt;
 
 use log::{debug, error, info, warn};
-use panes::{Content, PaneMessage};
 
 use nix::unistd::ForkResult::{Child, Parent};
 use nix::unistd::{fork, getpid, getppid};
@@ -170,14 +170,15 @@ pub enum Message {
     Close(pane_grid::Pane),
     CloseFocused,
 
-    ChildMessage(PaneMessage),
-
     //ControlBar messages
     Toggle,
     Play(Option<Song>),
     Pause,
     Next,
     Previous,
+    SliderChanged(u32),     // changed by user, seek song to new position
+    SliderChangedAuto(u32), // updated by server, don't seek new position
+    RefreshControl(Instant),
 
     //Menu messages
     Home,
@@ -189,14 +190,20 @@ pub enum Message {
     IntoControlBar(pane_grid::Pane),
     IntoSearchBar(pane_grid::Pane),
     IntoList(pane_grid::Pane),
-    // // List message
+
+    // List message
+    AskRefreshList(pane_grid::Pane),
+    ReceivedNewList(pane_grid::Pane, Rc<ouverture_core::server::Reply>),
+    ListMessage(list::ListMessage),
+    ReceivedNewCurrentSong(Option<Song>, f32),
+
+
+
+    // Misc 
+    ServerReply(pane_grid::Pane),
+    Refresh(pane_grid::Pane),
 }
 
-impl From<PaneMessage> for Message {
-    fn from(pm: PaneMessage) -> Message {
-        Message::ChildMessage(pm)
-    }
-}
 
 impl From<Message> for Action<Message> {
     fn from(val: Message) -> Self {
@@ -271,7 +278,7 @@ impl<'a> Application for Ouverture {
 
     fn subscription(&self) -> Subscription<Message> {
         time::every(Duration::from_millis(1000))
-            .map(|i| Message::ChildMessage(PaneMessage::RefreshControl(i)))
+            .map(|i| Message::RefreshControl(i))
     }
 
     fn view(&self) -> Element<Message> {

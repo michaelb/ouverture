@@ -25,22 +25,6 @@ use ouverture_core::music::song::Song;
 
 use std::time::{Duration, Instant};
 
-#[derive(Debug, Clone)]
-pub enum PaneMessage {
-    ServerReply(pane_grid::Pane),
-    Refresh(pane_grid::Pane),
-
-    // for List
-    AskRefreshList(pane_grid::Pane),
-    ReceivedNewList(pane_grid::Pane, Rc<ouverture_core::server::Reply>),
-    ListMessage(list::ListMessage),
-    ReceivedNewCurrentSong(Option<Song>, f32),
-
-    SliderChanged(u32),     // changed by user, seek song to new position
-    SliderChangedAuto(u32), // updated by server, don't seek new position
-    RefreshControl(Instant),
-}
-
 impl Panes {
     pub fn new() -> Self {
         let a: Box<dyn Content> = Box::new(Editor::new(0));
@@ -167,7 +151,7 @@ impl Application for Panes {
                     self.focus = Some(new_pane);
                     self.panes.close(&pane);
                     return Command::single(
-                        Message::ChildMessage(PaneMessage::AskRefreshList(new_pane)).into(),
+                        Message::AskRefreshList(new_pane).into(),
                     );
                 } else {
                     warn!("failed to close pane, keeping current one");
@@ -185,26 +169,26 @@ impl Application for Panes {
                 }
                 self.panes.close(&pane);
             }
-            // AskRefreshList(pane) => {
-            //     let list: &mut list::List = self
-            //         .panes
-            //         .get_mut(&pane)
-            //         .unwrap()
-            //         .as_any_mut()
-            //         .downcast_mut::<list::List>()
-            //         .unwrap();
-            //     return list.update(AskRefreshList(pane));
-            // }
-            // ReceivedNewList(pane, reply) => {
-            //     let list: &mut list::List = self
-            //         .panes
-            //         .get_mut(&pane)
-            //         .unwrap()
-            //         .as_any_mut()
-            //         .downcast_mut::<list::List>()
-            //         .unwrap();
-            //     return list.update(ReceivedNewList(pane, reply));
-            // }
+            AskRefreshList(pane) => {
+                let list: &mut list::List = self
+                    .panes
+                    .get_mut(&pane)
+                    .unwrap()
+                    .as_any_mut()
+                    .downcast_mut::<list::List>()
+                    .unwrap();
+                return list.update(AskRefreshList(pane));
+            }
+            ReceivedNewList(pane, reply) => {
+                let list: &mut list::List = self
+                    .panes
+                    .get_mut(&pane)
+                    .unwrap()
+                    .as_any_mut()
+                    .downcast_mut::<list::List>()
+                    .unwrap();
+                return list.update(ReceivedNewList(pane, reply));
+            }
             // ResizeColumn(pane, event) => {
             //     let mut list: &mut list::List = self
             //         .panes
@@ -215,16 +199,15 @@ impl Application for Panes {
             //         .unwrap();
             //     return list.update(ResizeColumn(pane, event));
             // }
-            ChildMessage(msg) => {
+            msg => {
                 let command = Command::batch(
                     self.panes
                         .iter_mut()
-                        .map(|(_p, s)| s.update(ChildMessage(msg.clone()))),
+                        .map(|(_p, s)| s.update(msg.clone())),
                 );
                 debug!("passing message to children");
                 return command;
             }
-            _ => (),
         }
 
         Command::none()

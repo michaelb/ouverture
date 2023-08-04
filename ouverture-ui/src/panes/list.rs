@@ -10,7 +10,6 @@ use std::string::ToString;
 use strum::Display;
 
 use super::Content;
-use crate::panes::PaneMessage;
 use crate::Message;
 
 use iced_runtime::command::Action;
@@ -84,9 +83,7 @@ impl Content for List {
         let heading_button = |button_text: &str, sort_order: Option<ColumnField>| {
             let mut button = button(text(button_text).vertical_alignment(Vertical::Center));
             if let Some(order) = sort_order {
-                button = button.on_press(Message::ChildMessage(PaneMessage::ListMessage(
-                    ListMessage::Sort(order),
-                )))
+                button = button.on_press(Message::ListMessage(ListMessage::Sort(order)))
             }
             button
         };
@@ -124,9 +121,7 @@ impl Content for List {
                 iced::theme::Button::Secondary // TODO custom theme for alternating colors in list
             };
             let select_row_button = button(r)
-                .on_press(Message::ChildMessage(PaneMessage::ListMessage(
-                    ListMessage::ClickRow(Some(i)),
-                )))
+                .on_press(Message::ListMessage(ListMessage::ClickRow(Some(i))))
                 .height(Length::Fixed(30.0))
                 .style(button_theme);
             rows = rows.push(select_row_button);
@@ -143,26 +138,23 @@ impl Content for List {
     }
 
     fn update(&mut self, message: Message) -> Command<Message> {
-        if let Message::ChildMessage(cmessage) = message {
-            return match cmessage {
-                PaneMessage::AskRefreshList(pane) => self.ask_refresh_list(pane),
-                PaneMessage::ReceivedNewList(_pane, reply) => {
-                    self.got_refresh_list(&reply);
+        return match message {
+            Message::AskRefreshList(pane) => self.ask_refresh_list(pane),
+            Message::ReceivedNewList(_pane, reply) => {
+                self.got_refresh_list(&reply);
+                Command::none()
+            }
+            Message::ListMessage(ListMessage::ClickRow(Some(i))) => {
+                if !&self.rows[i].1 {
+                    *(&mut self.rows[i].1) = true;
                     Command::none()
+                } else {
+                    Command::single(Message::Play(Some(self.rows[i].0.clone())).into())
                 }
-                PaneMessage::ListMessage(ListMessage::ClickRow(Some(i))) => {
-                    if !&self.rows[i].1 {
-                        *(&mut self.rows[i].1) = true;
-                        Command::none()
-                    } else {
-                        Command::single(Message::Play(Some(self.rows[i].0.clone())).into())
-                    }
-                }
+            }
 
-                _ => Command::none(),
-            };
-        }
-        Command::none()
+            _ => Command::none(),
+        };
     }
 
     fn as_any(&self) -> &dyn std::any::Any {
@@ -191,7 +183,7 @@ impl List {
                 .await
                 .unwrap();
             debug!("asked for list refresh");
-            PaneMessage::ReceivedNewList(pane, Rc::new(reply)).into()
+            Message::ReceivedNewList(pane, Rc::new(reply))
         })))
     }
 

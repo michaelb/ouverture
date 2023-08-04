@@ -6,7 +6,6 @@ use super::Content;
 use crate::Message;
 use ouverture_core::music::song::Song;
 
-use crate::panes::PaneMessage;
 use ouverture_core::server::Reply;
 
 use log::debug;
@@ -51,7 +50,7 @@ impl ControlBar {
             debug!("asked for new current song, got {reply:?}");
             match reply {
                 Reply::CurrentSong(song, seek) => {
-                    PaneMessage::ReceivedNewCurrentSong(song, seek).into()
+                   Message::ReceivedNewCurrentSong(song, seek)
                 }
                 _ => Message::Nothing,
             }
@@ -71,7 +70,7 @@ impl ControlBar {
             self.slider_value = (seek * 4096f32) as u32;
         }
         Command::single(
-            Message::ChildMessage(PaneMessage::SliderChangedAuto(self.slider_value)).into(),
+            Message::SliderChangedAuto(self.slider_value).into(),
         )
     }
 }
@@ -79,9 +78,9 @@ impl ControlBar {
 impl Content for ControlBar {
     fn update(&mut self, message: Message) -> Command<Message> {
         match message {
-            Message::ChildMessage(PaneMessage::RefreshControl(_)) => self.refresh(),
-            Message::ChildMessage(PaneMessage::SliderChanged(value)) => self.notify_seek(value),
-            Message::ChildMessage(PaneMessage::ReceivedNewCurrentSong(song, seek)) => {
+            Message::RefreshControl(_) => self.refresh(),
+            Message::SliderChanged(value) => self.notify_seek(value),
+            Message::ReceivedNewCurrentSong(song, seek) => {
                 self.refresh_from_song(song, Some(seek))
             }
             _ => Command::none(),
@@ -89,7 +88,7 @@ impl Content for ControlBar {
     }
     fn view(&self, _pane: pane_grid::Pane, _total_panes: usize) -> Element<Message> {
         let slider = container(slider(0..=4096, self.slider_value, |x| {
-            PaneMessage::SliderChanged(x).into()
+            Message::SliderChanged(x)
         }))
         .width(250);
 
