@@ -169,14 +169,18 @@ impl AudioTask {
     }
 
     pub fn stop(self) {
+        debug!("audio thread stop received");
         self.state
             .lock()
             .unwrap()
             .cmd_tx
             .send(AudioCommand::Quit)
             .unwrap();
+        debug!("audio thread stop sent");
         stop_audio_thread(self.audio_thread);
+        debug!("audio thread stopped");
         self.queue_task_handle.abort();
+        debug!("audio queue cleaned");
     }
 }
 

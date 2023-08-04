@@ -125,7 +125,10 @@ fn audio_thread_fn(mut rx: Receiver<AudioCommand>, tx: Sender<AudioEvent>) {
                 thread::sleep(sleep_period);
                 None
             }
-            Some(Quit) => break,
+            Some(Quit) => {
+                debug!("Quit received in audio thread");
+                break;
+            }
             Some(PlayNew(song)) => {
                 current_song = Some(song.clone());
                 current_seek_ms = 0;
@@ -138,7 +141,7 @@ fn audio_thread_fn(mut rx: Receiver<AudioCommand>, tx: Sender<AudioEvent>) {
                         tx.send(AudioEvent::Failed).unwrap();
                         None
                     }
-                    _ => None,
+                    cmd => cmd,
                 }
             }
             Some(Play) => {
@@ -156,7 +159,7 @@ fn audio_thread_fn(mut rx: Receiver<AudioCommand>, tx: Sender<AudioEvent>) {
                             tx.send(AudioEvent::Failed).unwrap();
                             None
                         }
-                        _ => None,
+                        cmd => cmd,
                     }
                 } else {
                     warn!("Play requested but no current song");
@@ -185,6 +188,7 @@ fn audio_thread_fn(mut rx: Receiver<AudioCommand>, tx: Sender<AudioEvent>) {
             Some(DoneErr) => panic!(),
         }
     }
+    debug!("audio outer loop finished");
 }
 
 pub fn decode(
@@ -322,8 +326,11 @@ pub fn decode(
                             .unwrap();
                             ()
                         }
-                        Ok(cmd) => return Some(cmd.clone()), // TODO exhaust the enum manually to avoid alloc in audio thread
-                        Err(_) => (),                        // most likely no new cmd
+                        Ok(cmd) => {
+                            debug!("inner loop received {cmd:?}");
+                            return Some(cmd.clone());
+                        } // TODO exhaust the enum manually to avoid alloc in audio thread
+                        Err(_) => (), // most likely no new cmd
                     }
                 }
                 Err(Error::IoError(_)) => {
