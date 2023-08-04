@@ -49,9 +49,7 @@ impl ControlBar {
                 .unwrap();
             debug!("asked for new current song, got {reply:?}");
             match reply {
-                Reply::CurrentSong(song, seek) => {
-                   Message::ReceivedNewCurrentSong(song, seek)
-                }
+                Reply::CurrentSong(song, seek) => Message::ReceivedNewCurrentSong(song, seek),
                 _ => Message::Nothing,
             }
         })))
@@ -69,9 +67,7 @@ impl ControlBar {
         if let Some(seek) = opt_seek {
             self.slider_value = (seek * 4096f32) as u32;
         }
-        Command::single(
-            Message::SliderChangedAuto(self.slider_value).into(),
-        )
+        Command::single(Message::SliderChangedAuto(self.slider_value).into())
     }
 }
 
@@ -80,9 +76,7 @@ impl Content for ControlBar {
         match message {
             Message::RefreshControl(_) => self.refresh(),
             Message::SliderChanged(value) => self.notify_seek(value),
-            Message::ReceivedNewCurrentSong(song, seek) => {
-                self.refresh_from_song(song, Some(seek))
-            }
+            Message::ReceivedNewCurrentSong(song, seek) => self.refresh_from_song(song, Some(seek)),
             _ => Command::none(),
         }
     }
