@@ -82,8 +82,7 @@ pub enum ListMessage {
 impl Content for List {
     fn view(&self, _pane: pane_grid::Pane, _total_panes: usize) -> Element<Message> {
         let heading_button = |button_text: &str, sort_order: Option<ColumnField>| {
-            let mut button =
-                button(text(button_text).vertical_alignment(Vertical::Center));
+            let mut button = button(text(button_text).vertical_alignment(Vertical::Center));
             if let Some(order) = sort_order {
                 button = button.on_press(Message::ChildMessage(PaneMessage::ListMessage(
                     ListMessage::Sort(order),
