@@ -69,6 +69,7 @@ Very much at Work-In-*Planning* stage now 😄
 - [beets](https://github.com/beetbox/beets)
 - [yt-dlp](https://github.com/yt-dlp/yt-dlp)
 - [rustic](https://github.com/rustic-music-player/rustic)
+- [subsonic](http://www.subsonic.org/pages/index.jsp)
 
 ## Maybe-useful ressources
 
