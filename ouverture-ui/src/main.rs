@@ -117,7 +117,7 @@ fn main() -> iced::Result {
 
     // when this finishes (may be due to a graphical kill)
     // send a 'stop' command to the server if not external and not background
-    if (!ui_config.external_server) && (!ui_config.background)  {
+    if (!ui_config.external_server) && (!ui_config.background) {
         let address = ui_config.server_address + ":" + &ui_config.server_port.to_string();
         let server_stop_res = Server::send_wait_sync(&Stop, &address);
         match server_stop_res {
@@ -171,7 +171,6 @@ pub enum Message {
     Resized(pane_grid::ResizeEvent),
     Close(pane_grid::Pane),
     CloseFocused,
-
 
     //ControlBar messages
     Toggle,
