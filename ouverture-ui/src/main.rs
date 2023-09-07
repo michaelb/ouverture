@@ -116,12 +116,14 @@ fn main() -> iced::Result {
     let res = Ouverture::run(s);
 
     // when this finishes (may be due to a graphical kill)
-    // send a 'stop' command to the server
-    let address = ui_config.server_address + ":" + &ui_config.server_port.to_string();
-    let server_stop_res = Server::send_wait_sync(&Stop, &address);
-    match server_stop_res {
-        Ok(_) => info!("Server stopped gracefully"),
-        Err(e) => warn!("Failed to stop ouverture server at address {address}: {e:?}"),
+    // send a 'stop' command to the server if not external and not background
+    if (!ui_config.external_server) && (!ui_config.background)  {
+        let address = ui_config.server_address + ":" + &ui_config.server_port.to_string();
+        let server_stop_res = Server::send_wait_sync(&Stop, &address);
+        match server_stop_res {
+            Ok(_) => info!("Server stopped gracefully"),
+            Err(e) => warn!("Failed to stop ouverture server at address {address}: {e:?}"),
+        }
     }
     return res;
 }
@@ -169,6 +171,7 @@ pub enum Message {
     Resized(pane_grid::ResizeEvent),
     Close(pane_grid::Pane),
     CloseFocused,
+
 
     //ControlBar messages
     Toggle,
@@ -218,10 +221,6 @@ impl<'a> Application for Ouverture {
     type Theme = Theme;
 
     fn new(flags: Self::Flags) -> (Self, Command<Message>) {
-        if let Some(config_path) = flags.config.clone() {
-            info!("Using custom config path: {config_path:?}");
-            let read_config = Config::new(&config_path);
-        }
         (Ouverture::from_config(flags.config), Command::none())
     }
 

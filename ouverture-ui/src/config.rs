@@ -13,6 +13,7 @@ pub struct Config {
     pub server_port: usize,
 
     pub external_server: bool,
+    pub background: bool,
 }
 
 impl Config {
@@ -33,10 +34,15 @@ impl Config {
             theme: String::from("light"),
             server_port: 6603,
             external_server: true,
+            background: true,
         };
 
         if let Some(toml::Value::Boolean(external_server)) = t.get("external_server") {
             config.external_server = *external_server;
+        }
+
+        if let Some(toml::Value::Boolean(background)) = t.get("background") {
+            config.background = *background;
         }
 
         if let Some(toml::Value::Integer(server_port)) = t.get("server_port") {
@@ -62,6 +68,7 @@ impl Default for Config {
             server_port: 6603,
             theme: String::from("light"),
             external_server: false,
+            background: true,
         }
     }
 }
