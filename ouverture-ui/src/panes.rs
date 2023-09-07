@@ -150,9 +150,7 @@ impl Application for Panes {
                 if let Some((new_pane, _)) = result {
                     self.focus = Some(new_pane);
                     self.panes.close(&pane);
-                    return Command::single(
-                        Message::AskRefreshList(new_pane).into(),
-                    );
+                    return Command::single(Message::AskRefreshList(new_pane).into());
                 } else {
                     warn!("failed to close pane, keeping current one");
                 };
@@ -200,11 +198,8 @@ impl Application for Panes {
             //     return list.update(ResizeColumn(pane, event));
             // }
             msg => {
-                let command = Command::batch(
-                    self.panes
-                        .iter_mut()
-                        .map(|(_p, s)| s.update(msg.clone())),
-                );
+                let command =
+                    Command::batch(self.panes.iter_mut().map(|(_p, s)| s.update(msg.clone())));
                 debug!("passing message to children");
                 return command;
             }

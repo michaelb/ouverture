@@ -200,13 +200,10 @@ pub enum Message {
     ListMessage(list::ListMessage),
     ReceivedNewCurrentSong(Option<Song>, f32),
 
-
-
-    // Misc 
+    // Misc
     ServerReply(pane_grid::Pane),
     Refresh(pane_grid::Pane),
 }
-
 
 impl From<Message> for Action<Message> {
     fn from(val: Message) -> Self {
@@ -276,8 +273,7 @@ impl<'a> Application for Ouverture {
     }
 
     fn subscription(&self) -> Subscription<Message> {
-        time::every(Duration::from_millis(1000))
-            .map(|i| Message::RefreshControl(i))
+        time::every(Duration::from_millis(1000)).map(|i| Message::RefreshControl(i))
     }
 
     fn view(&self) -> Element<Message> {
