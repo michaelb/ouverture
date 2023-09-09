@@ -1,6 +1,7 @@
 [workspace]
 members = [
     "ouverture-core",
+    "ouverture-server",
     "ouverture-ui",
     "ouverture-cli"
 ]

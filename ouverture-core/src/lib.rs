@@ -22,8 +22,6 @@ use signal_hook_tokio::Signals;
 use color_eyre::{eyre::eyre, Result};
 use log::{debug, error, info, trace, warn};
 
-use daemonize::Daemonize;
-
 #[tokio::main]
 pub async fn start_with_handlers(config: Config) -> Result<()> {
     // Set up signal handlers

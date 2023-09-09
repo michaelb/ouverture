@@ -90,5 +90,5 @@ Very much at Work-In-*Planning* stage now 😄
 
 ## Dependencies
 
- - $${\color{grey}postresql (automatically fetched from maven repos at compile time and embedded)}$$
- - libpulse (Linux)
+ - postresql (automatically fetched from maven repos at compile time and embedded)
+ - libpulse (Linux) 

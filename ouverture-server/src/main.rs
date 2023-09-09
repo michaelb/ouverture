@@ -1,9 +1,7 @@
-extern crate ouverture_core;
 mod opt;
 
 use color_eyre::eyre::eyre;
 use color_eyre::Result;
-use futures::stream::StreamExt;
 use log::LevelFilter::*;
 use log::{debug, error, info, trace, warn};
 use opt::Opt;
