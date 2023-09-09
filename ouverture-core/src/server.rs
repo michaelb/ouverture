@@ -9,9 +9,10 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::{TcpListener, TcpStream};
 
 use crate::config::Config;
+use crate::error::ServerError;
 use crate::library::*;
 use crate::music::song::Song;
-use color_eyre::Result;
+use color_eyre::{eyre::eyre, Result};
 
 use rc_event_queue::mpmc::EventQueue;
 
@@ -26,6 +27,9 @@ use crate::audio::{
     audio_thread_pause, audio_thread_play, audio_thread_play_song, start_audio_thread,
     stop_audio_thread, AudioTask,
 };
+
+// magic number to identify ovuerture protocol on the wire
+const MAGIC_ID_OUVERTURE_PROTOCOL: u64 = 0xACDE314152960000;
 
 pub struct Server {
     config: Config,
@@ -88,7 +92,16 @@ impl Server {
                     };
 
                     debug!("got new packet");
-                    let size = u64::from_ne_bytes(buf);
+
+                    let size = match Command::decode_size(buf) {
+                        Ok(i) => i,
+                        Err(e) => {
+                            trace!("error: {e:?}, skipping packet"); // TODO: redirect to other
+                                                                     // APIs
+                            continue;
+                        }
+                    };
+                    trace!("size is {size}");
 
                     let mut payload = vec![0; size as usize];
                     let res = socket.read_exact(&mut payload[..]).await;
@@ -222,7 +235,13 @@ impl Server {
                 }
             };
 
-            let size = u64::from_ne_bytes(buf);
+            let size = match Reply::decode_size(buf) {
+                Ok(i) => i,
+                Err(e) => {
+                    trace!("error: {:?}, stopping", e);
+                    break;
+                }
+            };
 
             let mut payload = vec![0; size as usize];
             let res = stream.read_exact(&mut payload[..]).await;
@@ -256,38 +275,42 @@ impl Server {
         address: &'a str,
     ) -> impl Stream<Item = Result<Reply, Box<dyn Error + Send + Sync>>> + 'a {
         try_stream! {
-            let encoded: Vec<u8> = message.prepare_query()?;
-            let mut stream = TcpStream::connect(address).await?;
-            stream.write_all(&encoded).await?;
-             // Wait for 'done', yielding all other replies
-            let mut buf = [0u8; 8];
-            loop {
-                match stream.read(&mut buf).await {
-                    // socket closed
-                    Ok(n) if n == 0 => break,
-                    Ok(n) => n,
-                    Err(e) => {
-                        error!("failed to read from socket; err = {:?}", e);
-                        break;
-                    }
-                };
+              let encoded: Vec<u8> = message.prepare_query()?;
+              let mut stream = TcpStream::connect(address).await?;
+              stream.write_all(&encoded).await?;
+               // Wait for 'done', yielding all other replies
+              let mut buf = [0u8; 8];
+              loop {
+                  match stream.read(&mut buf).await {
+                      // socket closed
+                      Ok(n) if n == 0 => break,
+                      Ok(n) => n,
+                      Err(e) => {
+                          error!("failed to read from socket; err = {:?}", e);
+                          break;
+                      }
+                  };
 
-                let size = u64::from_ne_bytes(buf);
-
-                let mut payload = vec![0; size as usize];
-                let res = stream.read_exact(&mut payload[..]).await;
-                trace!("res from socket = {:?}", res);
-
-                let decoded_reply = bincode::deserialize::<Reply>(&payload)?;
-             match decoded_reply {
-                 Reply::Done => { yield Reply::Done; break },
-                 r => yield r,
-             }
+        let size = match Reply::decode_size(buf){
+                  Ok(i) => i,
+                  Err(e) => {trace!("error: {:?}, stopping",e); break;},
+              };
 
 
-            }
+                  let mut payload = vec![0; size as usize];
+                  let res = stream.read_exact(&mut payload[..]).await;
+                  trace!("res from socket = {:?}", res);
 
-        }
+                  let decoded_reply = bincode::deserialize::<Reply>(&payload)?;
+               match decoded_reply {
+                   Reply::Done => { yield Reply::Done; break },
+                   r => yield r,
+               }
+
+
+              }
+
+          }
     }
 
     async fn reply(
@@ -345,12 +368,25 @@ impl Command {
         // create a 8-bytes prefix: the length of the whole (prefix+message)
         match bincode::serialized_size(self) {
             Ok(size) => {
-                let mut message: Vec<u8> = (size as u64).to_ne_bytes().to_vec();
+                if size > std::u32::MAX as u64 {
+                    return Err(Box::new(ServerError::MessageTooBig));
+                }
+
+                let mut message: Vec<u8> =
+                    (MAGIC_ID_OUVERTURE_PROTOCOL + size).to_ne_bytes().to_vec();
                 // add the serialized content to the message
                 message.extend(bincode::serialize(self).unwrap());
                 Ok(message)
             }
             Err(e) => Err(Box::new(e)),
+        }
+    }
+    fn decode_size(buf: [u8; 8]) -> Result<u16, Box<dyn Error + Send + Sync>> {
+        let size = u64::from_ne_bytes(buf);
+        if size >> 16 == MAGIC_ID_OUVERTURE_PROTOCOL >> 16 {
+            return Ok((size - MAGIC_ID_OUVERTURE_PROTOCOL) as u16);
+        } else {
+            return Err(Box::new(ServerError::NotNativeProtocol));
         }
     }
 }
@@ -360,12 +396,25 @@ impl Reply {
         // create a 8-bytes prefix: the length of the whole (prefix+message)
         match bincode::serialized_size(self) {
             Ok(size) => {
-                let mut message: Vec<u8> = (size as u64).to_ne_bytes().to_vec();
+                if size > std::u16::MAX as u64 {
+                    return Err(Box::new(ServerError::MessageTooBig));
+                }
+
+                let mut message: Vec<u8> =
+                    (MAGIC_ID_OUVERTURE_PROTOCOL + size).to_ne_bytes().to_vec();
                 // add the serialized content to the message
                 message.extend(bincode::serialize(self).unwrap());
                 Ok(message)
             }
             Err(e) => Err(Box::new(e)),
+        }
+    }
+    fn decode_size(buf: [u8; 8]) -> Result<u16, Box<dyn Error + Send + Sync>> {
+        let size = u64::from_ne_bytes(buf);
+        if size >> 16 == MAGIC_ID_OUVERTURE_PROTOCOL >> 16 {
+            return Ok((size - MAGIC_ID_OUVERTURE_PROTOCOL) as u16);
+        } else {
+            return Err(Box::new(ServerError::NotNativeProtocol));
         }
     }
 }

@@ -10,15 +10,12 @@ repository = "https://github.com/michaelb/ouverture"
 readme = "README.md"
 categories = ["multimedia::audio"]
 
-[[bin]]
-name = "ouverture-server"
-path = "src/main.rs"
-
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 serde = { version = "1.0", features = ["derive"] }
 color-eyre = "0.6"
+thiserror = "1.0"
 toml = "0.7.6"
 structopt = "0.3"
 
