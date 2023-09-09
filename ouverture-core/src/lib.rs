@@ -1,11 +1,11 @@
 pub mod audio;
 pub mod config;
 pub mod database;
+pub mod error;
 pub mod library;
 pub mod logger;
 pub mod music;
 pub mod server;
-pub mod error;
 
 use config::Config;
 use server::Server;
