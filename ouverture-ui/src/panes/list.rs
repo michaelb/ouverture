@@ -15,10 +15,10 @@ use crate::Message;
 use iced_runtime::command::Action;
 use std::rc::Rc;
 
+use crate::config::Config;
 use ouverture_core::music::song::Song;
 use ouverture_core::server::Command as ServerCommand;
 use ouverture_core::server::Server;
-use crate::config::Config;
 
 use iced::widget::button;
 use iced::{Background, Color, Theme, Vector};
@@ -179,7 +179,8 @@ impl List {
     }
 
     pub fn ask_refresh_list(&mut self, pane: pane_grid::Pane) -> Command<Message> {
-        let address = self.config.server_address.to_string() + ":" + &self.config.server_port.to_string();
+        let address =
+            self.config.server_address.to_string() + ":" + &self.config.server_port.to_string();
 
         Command::single(Action::Future(Box::pin(async move {
             let reply = Server::send_wait(&ServerCommand::GetList(None), &address)

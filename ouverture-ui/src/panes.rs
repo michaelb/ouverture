@@ -12,8 +12,8 @@ pub struct Panes {
     config: Config,
 }
 
-use crate::Message;
 use crate::config::Config;
+use crate::Message;
 use log::{debug, trace, warn};
 
 use std::any::Any;
@@ -52,7 +52,6 @@ impl Panes {
         }
     }
 }
-
 
 impl Application for Panes {
     type Message = Message;

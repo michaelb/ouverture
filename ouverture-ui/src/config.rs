@@ -62,12 +62,9 @@ impl Config {
         Ok(config)
     }
 
-
     pub fn get_theme(&self) -> Theme {
         ThemeType::from(self.theme.clone().into()).into()
-
     }
-    
 }
 
 impl Default for Config {

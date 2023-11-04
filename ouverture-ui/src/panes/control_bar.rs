@@ -3,8 +3,8 @@ use iced::{Command, Element, Length};
 use iced::widget::{button, column, container, pane_grid, row, slider, text};
 
 use super::Content;
-use crate::Message;
 use crate::config::Config;
+use crate::Message;
 use ouverture_core::music::song::Song;
 
 use ouverture_core::server::Reply;
@@ -21,7 +21,7 @@ use ouverture_core::server::Command as ServerCommand;
 use ouverture_core::server::Server;
 
 impl ControlBar {
-    pub fn new(c : &Config) -> Self {
+    pub fn new(c: &Config) -> Self {
         ControlBar {
             slider_value: 0, // between 0 and 4096
             current_song_length: None,
@@ -30,7 +30,8 @@ impl ControlBar {
     }
 
     pub fn notify_seek(&mut self, value: u32) -> Command<Message> {
-        let address = self.config.server_address.to_string() + ":" + &self.config.server_port.to_string();
+        let address =
+            self.config.server_address.to_string() + ":" + &self.config.server_port.to_string();
         debug!("address is {address}");
         self.slider_value = value;
 
@@ -44,7 +45,8 @@ impl ControlBar {
     }
 
     pub fn refresh(&self) -> Command<Message> {
-        let address = self.config.server_address.to_string() + ":" + &self.config.server_port.to_string();
+        let address =
+            self.config.server_address.to_string() + ":" + &self.config.server_port.to_string();
         debug!("refreshing control");
 
         Command::single(Action::Future(Box::pin(async move {

@@ -140,14 +140,20 @@ impl Ouverture {
             info!("Using custom config path: {config_path:?}");
             let read_config = Config::new(&config_path);
             if let Ok(c) = read_config {
-        return Ouverture { panes: Panes::new(&c), config: c};
+                return Ouverture {
+                    panes: Panes::new(&c),
+                    config: c,
+                };
             } else {
                 warn!(
                     "Custom configuration is incomplete and couldn't be applied: {read_config:?}"
                 );
             }
         }
-        return Ouverture { panes: Panes::new(&Config::default()), config: Config::default()};
+        return Ouverture {
+            panes: Panes::new(&Config::default()),
+            config: Config::default(),
+        };
     }
 }
 
@@ -209,7 +215,6 @@ impl From<Message> for Action<Message> {
     }
 }
 
-
 impl<'a> Application for Ouverture {
     type Message = Message;
     type Executor = iced_futures::backend::native::tokio::Executor;
@@ -225,7 +230,8 @@ impl<'a> Application for Ouverture {
     }
 
     fn update(&mut self, message: Message) -> Command<Message> {
-        let address = self.config.server_address.to_string() + ":" + &self.config.server_port.to_string();
+        let address =
+            self.config.server_address.to_string() + ":" + &self.config.server_port.to_string();
         debug!("top-level message: {:?}", message);
         match message {
             Message::ThemeChanged(theme) => {
