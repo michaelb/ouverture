@@ -101,7 +101,8 @@ impl Content for List {
                 if c.0 == self.current_sort.0 {
                     let direction_marker = if self.current_sort.1 { "↑" } else { "↓" };
                     header_row = header_row.push(
-                        heading_button(&(c.0.to_string() + " " + direction_marker), Some(c.0)).width(Length::Fixed(c.1)),
+                        heading_button(&(c.0.to_string() + " " + direction_marker), Some(c.0))
+                            .width(Length::Fixed(c.1)),
                     );
                 } else {
                     header_row = header_row.push(
