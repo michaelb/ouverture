@@ -271,9 +271,10 @@ impl<'a> Application for Ouverture {
         }
     }
 
-    fn subscription(&self) -> Subscription<Message> {
-        time::every(Duration::from_millis(1000)).map(|i| Message::RefreshControl(i))
-    }
+    // fn subscription(&self) -> Subscription<Message> {
+        // TODO reactivate poll or do thing in another way to reflect server changes
+        // time::every(Duration::from_millis(1000)).map(|i| Message::RefreshControl(i))
+    // }
 
     fn view(&self) -> Element<Message> {
         let panes = self.panes.view();

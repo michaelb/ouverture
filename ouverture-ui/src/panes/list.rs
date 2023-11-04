@@ -15,10 +15,10 @@ use crate::Message;
 use iced_runtime::command::Action;
 use std::rc::Rc;
 
+use crate::config::Config;
 use ouverture_core::music::song::Song;
 use ouverture_core::server::Command as ServerCommand;
 use ouverture_core::server::Server;
-use crate::config::Config;
 
 use iced::widget::button;
 use iced::{Background, Color, Theme, Vector};
@@ -59,7 +59,7 @@ impl ListRow {
     }
 }
 
-#[derive(Display, Debug, Copy, Clone)]
+#[derive(Display, Debug, Copy, Clone, PartialEq, Eq)]
 pub enum ColumnField {
     Title,
     Artist,
@@ -98,8 +98,16 @@ impl Content for List {
                 .push(heading_button("X", None).width(Length::Fixed(ICON_COLUMN_WIDTH)));
 
             for c in self.columns.iter() {
-                header_row = header_row
-                    .push(heading_button(&c.0.to_string(), Some(c.0)).width(Length::Fixed(c.1)));
+                if c.0 == self.current_sort.0 {
+                    let direction_marker = if self.current_sort.1 { "↑" } else { "↓" };
+                    header_row = header_row.push(
+                        heading_button(&(c.0.to_string() + " " + direction_marker), Some(c.0)).width(Length::Fixed(c.1)),
+                    );
+                } else {
+                    header_row = header_row.push(
+                        heading_button(&c.0.to_string(), Some(c.0)).width(Length::Fixed(c.1)),
+                    );
+                }
             }
             header_row
         })
@@ -122,6 +130,9 @@ impl Content for List {
             } else {
                 iced::theme::Button::Secondary // TODO custom theme for alternating colors in list
             };
+
+            // TODO display in another color if is the selected song
+
             let select_row_button = button(r)
                 .on_press(Message::ListMessage(ListMessage::ClickRow(Some(i))))
                 .height(Length::Fixed(30.0))
@@ -154,6 +165,27 @@ impl Content for List {
                     Command::single(Message::Play(Some(self.rows[i].0.clone())).into())
                 }
             }
+            Message::ListMessage(ListMessage::Sort(field)) => {
+                let mut order = self.current_sort.1;
+                if self.current_sort.0 == field {
+                    order = !order;
+                }
+                self.current_sort = (field, order);
+                //
+                // Sort in correct direction
+                let sort_helper = |s: Song| match self.current_sort.0 {
+                    ColumnField::Title => s.title.unwrap_or("".into()).to_lowercase(),
+                    ColumnField::Artist => s.artist.unwrap_or("".into()).to_lowercase(),
+                    ColumnField::Album => s.album.unwrap_or("".into()).to_lowercase(),
+                };
+                self.rows
+                    .sort_by(|a, b| sort_helper(a.0.clone()).cmp(&sort_helper(b.0.clone())));
+                // TODO more efficient sorting/inverting ?
+                if !(order) {
+                    self.rows.reverse();
+                }
+                Command::none()
+            }
 
             _ => Command::none(),
         };
@@ -179,7 +211,8 @@ impl List {
     }
 
     pub fn ask_refresh_list(&mut self, pane: pane_grid::Pane) -> Command<Message> {
-        let address = self.config.server_address.to_string() + ":" + &self.config.server_port.to_string();
+        let address =
+            self.config.server_address.to_string() + ":" + &self.config.server_port.to_string();
 
         Command::single(Action::Future(Box::pin(async move {
             let reply = Server::send_wait(&ServerCommand::GetList(None), &address)
