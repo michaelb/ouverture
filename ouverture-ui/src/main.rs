@@ -12,6 +12,7 @@ mod style;
 use config::Config;
 use style::ThemeType;
 pub mod panes;
+use panes::Panes;
 
 use std::rc::Rc;
 use std::time::{Duration, Instant};
@@ -128,27 +129,25 @@ fn main() -> iced::Result {
     return res;
 }
 
-#[derive(Default)]
 struct Ouverture {
-    theme: Theme,
     panes: panes::Panes,
+    config: Config,
 }
 
 impl Ouverture {
     fn from_config(path: Option<PathBuf>) -> Self {
-        let mut ouverture: Ouverture = Default::default();
         if let Some(config_path) = path {
             info!("Using custom config path: {config_path:?}");
             let read_config = Config::new(&config_path);
             if let Ok(c) = read_config {
-                ouverture.theme = ThemeType::from(c.theme.into()).into();
+        return Ouverture { panes: Panes::new(&c), config: c};
             } else {
                 warn!(
                     "Custom configuration is incomplete and couldn't be applied: {read_config:?}"
                 );
             }
         }
-        return ouverture;
+        return Ouverture { panes: Panes::new(&Config::default()), config: Config::default()};
     }
 }
 
@@ -210,6 +209,7 @@ impl From<Message> for Action<Message> {
     }
 }
 
+
 impl<'a> Application for Ouverture {
     type Message = Message;
     type Executor = iced_futures::backend::native::tokio::Executor;
@@ -225,16 +225,16 @@ impl<'a> Application for Ouverture {
     }
 
     fn update(&mut self, message: Message) -> Command<Message> {
-        let address = "127.0.0.1:6603";
+        let address = self.config.server_address.to_string() + ":" + &self.config.server_port.to_string();
         debug!("top-level message: {:?}", message);
         match message {
             Message::ThemeChanged(theme) => {
-                self.theme = theme.into();
+                self.config.theme = theme.into();
                 Command::none()
             }
 
             Message::Play(opt_song) => Command::single(Action::Future(Box::pin(async move {
-                let reply = Server::send_wait(&ServerCommand::Play(opt_song), address)
+                let reply = Server::send_wait(&ServerCommand::Play(opt_song), &address)
                     .await
                     .unwrap();
                 debug!("GUI asked for play (status = {:?}", reply);
@@ -242,7 +242,7 @@ impl<'a> Application for Ouverture {
             }))),
             Message::Toggle => Command::single(Action::Future(Box::pin(async move {
                 debug!("GUI asking for toggle");
-                let reply = Server::send_wait(&ServerCommand::Toggle, address)
+                let reply = Server::send_wait(&ServerCommand::Toggle, &address)
                     .await
                     .unwrap();
                 debug!("GUI asked for toggle, server replied: {:?}", reply);
@@ -250,7 +250,7 @@ impl<'a> Application for Ouverture {
             }))),
             Message::Next => Command::single(Action::Future(Box::pin(async move {
                 debug!("GUI asking for next");
-                let reply = Server::send_wait(&ServerCommand::Next, address)
+                let reply = Server::send_wait(&ServerCommand::Next, &address)
                     .await
                     .unwrap();
                 debug!("GUI asked for next, server replied: {:?}", reply);
@@ -258,7 +258,7 @@ impl<'a> Application for Ouverture {
             }))),
             Message::Previous => Command::single(Action::Future(Box::pin(async move {
                 debug!("GUI asking for previous");
-                let reply = Server::send_wait(&ServerCommand::Previous, address)
+                let reply = Server::send_wait(&ServerCommand::Previous, &address)
                     .await
                     .unwrap();
                 debug!("GUI asked for previous, server replied: {:?}", reply);
@@ -287,6 +287,6 @@ impl<'a> Application for Ouverture {
     }
 
     fn theme(&self) -> Theme {
-        self.theme.clone()
+        self.config.get_theme()
     }
 }

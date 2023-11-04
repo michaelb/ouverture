@@ -9,9 +9,11 @@ pub struct Panes {
     panes: pane_grid::State<Box<dyn Content>>,
     panes_created: usize,
     focus: Option<pane_grid::Pane>,
+    config: Config,
 }
 
 use crate::Message;
+use crate::config::Config;
 use log::{debug, trace, warn};
 
 use std::any::Any;
@@ -26,9 +28,9 @@ use ouverture_core::music::song::Song;
 use std::time::{Duration, Instant};
 
 impl Panes {
-    pub fn new() -> Self {
+    pub fn new(conf: &Config) -> Self {
         let a: Box<dyn Content> = Box::new(Editor::new(0));
-        let b: Box<dyn Content> = Box::new(control_bar::ControlBar::new());
+        let b: Box<dyn Content> = Box::new(control_bar::ControlBar::new(&conf));
 
         let a_conf = Box::new(iced::widget::pane_grid::Configuration::Pane(a));
         let b_conf = Box::new(iced::widget::pane_grid::Configuration::Pane(b));
@@ -46,24 +48,20 @@ impl Panes {
             panes,
             panes_created: 1,
             focus: None,
+            config: conf.clone(),
         }
     }
 }
 
-impl Default for Panes {
-    fn default() -> Self {
-        Self::new()
-    }
-}
 
 impl Application for Panes {
     type Message = Message;
     type Executor = executor::Default;
-    type Flags = ();
+    type Flags = Config;
     type Theme = Theme;
 
-    fn new(_flags: ()) -> (Self, Command<Message>) {
-        (Panes::default(), Command::none())
+    fn new(c: Config) -> (Self, Command<Message>) {
+        (Panes::new(&c), Command::none())
     }
 
     fn title(&self) -> String {
@@ -142,7 +140,7 @@ impl Application for Panes {
                 self.panes.close(&pane);
             }
             IntoList(pane) => {
-                let list = list::List::new();
+                let list = list::List::new(self.config.clone());
                 let result = self
                     .panes
                     .split(pane_grid::Axis::Horizontal, &pane, Box::new(list));
@@ -157,7 +155,7 @@ impl Application for Panes {
             }
 
             IntoControlBar(pane) => {
-                let menu = control_bar::ControlBar::new();
+                let menu = control_bar::ControlBar::new(&self.config);
                 let result = self
                     .panes
                     .split(pane_grid::Axis::Horizontal, &pane, Box::new(menu));

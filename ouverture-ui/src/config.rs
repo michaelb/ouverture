@@ -4,6 +4,8 @@ use std::io::prelude::*;
 use std::path::{Path, PathBuf};
 use toml;
 
+use crate::style::{Theme, ThemeType};
+
 use color_eyre::Result;
 
 #[derive(Deserialize, Debug, Clone)]
@@ -59,6 +61,13 @@ impl Config {
 
         Ok(config)
     }
+
+
+    pub fn get_theme(&self) -> Theme {
+        ThemeType::from(self.theme.clone().into()).into()
+
+    }
+    
 }
 
 impl Default for Config {

@@ -4,6 +4,7 @@ use iced::widget::{button, column, container, pane_grid, row, slider, text};
 
 use super::Content;
 use crate::Message;
+use crate::config::Config;
 use ouverture_core::music::song::Song;
 
 use ouverture_core::server::Reply;
@@ -12,6 +13,7 @@ use log::debug;
 pub struct ControlBar {
     slider_value: u32,
     current_song_length: Option<u64>, // length in milliseconds
+    config: Config,
 }
 use iced_runtime::command::Action;
 
@@ -19,19 +21,21 @@ use ouverture_core::server::Command as ServerCommand;
 use ouverture_core::server::Server;
 
 impl ControlBar {
-    pub fn new() -> Self {
+    pub fn new(c : &Config) -> Self {
         ControlBar {
             slider_value: 0, // between 0 and 4096
             current_song_length: None,
+            config: c.clone(),
         }
     }
 
     pub fn notify_seek(&mut self, value: u32) -> Command<Message> {
-        let address = "127.0.0.1:6603";
+        let address = self.config.server_address.to_string() + ":" + &self.config.server_port.to_string();
+        debug!("address is {address}");
         self.slider_value = value;
 
         Command::single(Action::Future(Box::pin(async move {
-            Server::send_wait(&ServerCommand::Seek((value as f32) / 4096f32), address)
+            Server::send_wait(&ServerCommand::Seek((value as f32) / 4096f32), &address)
                 .await
                 .unwrap();
             debug!("asked for list refresh");
@@ -40,11 +44,11 @@ impl ControlBar {
     }
 
     pub fn refresh(&self) -> Command<Message> {
-        let address = "127.0.0.1:6603";
+        let address = self.config.server_address.to_string() + ":" + &self.config.server_port.to_string();
         debug!("refreshing control");
 
         Command::single(Action::Future(Box::pin(async move {
-            let reply = Server::send_wait(&ServerCommand::GetCurrentSong, address)
+            let reply = Server::send_wait(&ServerCommand::GetCurrentSong, &address)
                 .await
                 .unwrap();
             debug!("asked for new current song, got {reply:?}");

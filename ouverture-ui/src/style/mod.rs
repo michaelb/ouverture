@@ -1,7 +1,7 @@
 mod builtin;
 
 use builtin::BuiltinTheme;
-use iced::theme::Theme;
+pub use iced::theme::Theme;
 
 use fixedstr::str32;
 use log::warn;
@@ -24,5 +24,11 @@ impl Into<Theme> for ThemeType {
 impl Into<ThemeType> for String {
     fn into(self) -> ThemeType {
         return ThemeType(str32::from(self));
+    }
+}
+
+impl From<ThemeType> for String {
+    fn from(value: ThemeType) -> Self {
+        value.0.to_string()
     }
 }

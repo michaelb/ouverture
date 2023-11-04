@@ -18,6 +18,7 @@ use std::rc::Rc;
 use ouverture_core::music::song::Song;
 use ouverture_core::server::Command as ServerCommand;
 use ouverture_core::server::Server;
+use crate::config::Config;
 
 use iced::widget::button;
 use iced::{Background, Color, Theme, Vector};
@@ -70,6 +71,7 @@ pub struct List {
     columns: Vec<(ColumnField, f32)>, // size and order of the columns
     current_sort: (ColumnField, bool), // current ordering (true = ascending, false) descending)
     current_selection: Option<usize>, // currently selected row
+    config: Config,
 }
 
 #[derive(Debug, Clone)]
@@ -166,20 +168,21 @@ impl Content for List {
 }
 
 impl List {
-    pub fn new() -> Self {
+    pub fn new(config: Config) -> Self {
         List {
             rows: vec![],
             columns: vec![(ColumnField::Title, 600.0), (ColumnField::Artist, 350.0)],
             current_sort: (ColumnField::Title, true),
             current_selection: None,
+            config,
         }
     }
 
     pub fn ask_refresh_list(&mut self, pane: pane_grid::Pane) -> Command<Message> {
-        let address = "127.0.0.1:6603";
+        let address = self.config.server_address.to_string() + ":" + &self.config.server_port.to_string();
 
         Command::single(Action::Future(Box::pin(async move {
-            let reply = Server::send_wait(&ServerCommand::GetList(None), address)
+            let reply = Server::send_wait(&ServerCommand::GetList(None), &address)
                 .await
                 .unwrap();
             debug!("asked for list refresh");
