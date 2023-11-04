@@ -1,7 +1,7 @@
 use serde::Deserialize;
 use std::fs::File;
 use std::io::prelude::*;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use toml;
 
 use crate::style::{Theme, ThemeType};

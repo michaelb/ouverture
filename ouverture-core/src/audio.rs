@@ -3,9 +3,8 @@ mod player;
 
 use tokio::task::spawn;
 
-use log::{debug, trace, warn};
+use log::{debug, warn};
 use std::collections::VecDeque;
-use std::pin::Pin;
 use std::sync::{Arc, Mutex};
 
 use crate::music::song::Song;

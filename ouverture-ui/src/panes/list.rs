@@ -1,11 +1,7 @@
-use iced::widget::pane_grid::Configuration;
-use iced::widget::{column, container, pane_grid, row, scrollable, text, Row};
-use iced::{
-    alignment::{Horizontal, Vertical},
-    Command, Element, Length, Padding,
-};
+use iced::widget::{column, container, pane_grid, row, scrollable, text};
+use iced::{alignment::Vertical, Command, Element, Length};
 use iced_native::widget::button::{Appearance, StyleSheet};
-use log::{debug, trace};
+use log::debug;
 use std::string::ToString;
 use strum::Display;
 
@@ -20,10 +16,8 @@ use ouverture_core::music::song::Song;
 use ouverture_core::server::Command as ServerCommand;
 use ouverture_core::server::Server;
 
+use crate::Theme;
 use iced::widget::button;
-use iced::{Background, Color, Theme, Vector};
-
-use crate::style::ThemeType;
 
 struct ListRow {
     title: String,
@@ -36,7 +30,7 @@ struct ListRowAppearance {}
 impl StyleSheet for ListRowAppearance {
     type Style = Theme;
 
-    fn active(&self, style: &Self::Style) -> Appearance {
+    fn active(&self, _style: &Self::Style) -> Appearance {
         Appearance {
             ..Default::default()
         }
@@ -49,13 +43,6 @@ impl From<Song> for ListRow {
             title: s.title.unwrap_or("Unknown".to_string()),
             artist: s.artist.unwrap_or("Unknown".to_string()),
         }
-    }
-}
-
-impl ListRow {
-    fn view(&self) -> Element<Message> {
-        let r = row![text(self.title.clone()), text(self.artist.clone())];
-        return r.into();
     }
 }
 

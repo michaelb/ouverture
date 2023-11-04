@@ -1,13 +1,11 @@
 mod opt;
 
-use color_eyre::eyre::eyre;
 use color_eyre::Result;
 use log::LevelFilter::*;
-use log::{debug, error, info, trace, warn};
+use log::{debug, error, info};
 use opt::Opt;
 use ouverture_core::config::Config;
 use ouverture_core::logger::{setup_logger, LogDestination::*};
-use ouverture_core::start;
 use structopt::StructOpt;
 
 use daemonize::Daemonize;

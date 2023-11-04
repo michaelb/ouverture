@@ -1,10 +1,8 @@
 pub mod setup;
 
 use pg_embed::pg_enums::PgAuthMethod;
-use pg_embed::pg_errors::PgEmbedError;
 use pg_embed::pg_fetch::{PgFetchSettings, PG_V13};
 use pg_embed::postgres::{PgEmbed, PgSettings};
-use platform_dirs::AppDirs;
 use std::path::PathBuf;
 use std::time::Duration;
 
@@ -15,8 +13,8 @@ use log::{debug, info};
 use color_eyre::eyre::eyre;
 use color_eyre::Result;
 use sea_orm::entity::prelude::*;
-use sea_orm::{entity::*, query::*};
-use sea_orm::{Database, DatabaseConnection};
+use sea_orm::entity::*;
+use sea_orm::Database;
 
 pub async fn setup_db(config: Config) -> Result<PgEmbed> {
     std::fs::create_dir_all(config.database_dir.clone())?;

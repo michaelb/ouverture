@@ -1,13 +1,10 @@
-use iced::theme::Theme;
 use iced::widget::{button, column, container, pane_grid, text};
 use iced::{Element, Length};
 
 use super::Content;
 use crate::Message;
 
-pub struct Menu {
-    currently_playing: bool,
-}
+pub struct Menu {}
 
 impl Content for Menu {
     fn view(&self, _pane: pane_grid::Pane, _total_panes: usize) -> Element<Message> {
@@ -24,9 +21,7 @@ impl Content for Menu {
 
 impl Menu {
     pub fn new() -> Self {
-        Menu {
-            currently_playing: false,
-        }
+        Menu {}
     }
 
     fn view(&self) -> Element<Message> {

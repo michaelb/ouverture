@@ -4,7 +4,7 @@ use symphonia::core::formats::FormatOptions;
 use symphonia::core::io::MediaSourceStream;
 use symphonia::core::meta::MetadataOptions;
 use symphonia::core::probe::Hint;
-use symphonia::core::units::TimeBase;
+// use symphonia::core::units::TimeBase;
 
 use crate::music::song::*;
 use std::fs::File;
@@ -15,14 +15,9 @@ use super::output;
 
 use std::time;
 
-use rc_event_queue::mpmc::{DefaultSettings, EventQueue, EventReader};
-use rc_event_queue::prelude::*;
 use tokio::sync::broadcast::{Receiver, Sender};
 
 use std::thread;
-
-use std::pin::Pin;
-use std::sync::Arc;
 
 #[derive(Copy, Clone, Debug)]
 pub enum AudioEvent {
@@ -244,10 +239,10 @@ pub fn decode(
 
         // Get the selected track's timebase and duration.
         let tb = track.codec_params.time_base.unwrap();
-        let dur = track
-            .codec_params
-            .n_frames
-            .map(|frames| track.codec_params.start_ts + frames);
+        // let dur = track
+        //     .codec_params
+        //     .n_frames
+        //     .map(|frames| track.codec_params.start_ts + frames);
 
         // The decode loop.
         let result: Result<(), Error> = loop {
@@ -304,7 +299,7 @@ pub fn decode(
                     // for the packet is >= the seeked position (0 if not seeking).
                     if packet.ts() * 1000 * (tb.numer as u64) / (tb.denom as u64) >= *seek {
                         if !no_progress {
-                            print_progress(packet.ts(), dur, tb);
+                            // print_progress(packet.ts(), dur, tb);
                         }
 
                         if let Some(ref mut audio_output) = audio_output {
@@ -366,6 +361,6 @@ pub fn decode(
     }
 }
 
-fn print_progress(ts: u64, dur: Option<u64>, tb: TimeBase) {
-    //debug!("progressing");
-}
+// fn print_progress(ts: u64, dur: Option<u64>, tb: TimeBase) {
+//debug!("progressing");
+// }

@@ -7,8 +7,7 @@ use log::{trace, warn};
 use crate::database::add_db;
 
 use sea_orm::entity::prelude::*;
-use sea_orm::{entity::*, query::*};
-use sea_orm::{Database, DatabaseConnection};
+use sea_orm::Database;
 
 use crate::database::*;
 

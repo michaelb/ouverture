@@ -1,7 +1,9 @@
-use iced::{Application, Command, Element, Length, Settings, Subscription};
+use iced::{Application, Command, Element, Length, Settings};
 
 use iced::theme::Theme;
-use iced::time;
+
+// use iced::Subscription;
+// use iced::time;
 
 use iced::widget::{container, pane_grid};
 
@@ -15,14 +17,11 @@ pub mod panes;
 use panes::Panes;
 
 use std::rc::Rc;
-use std::time::{Duration, Instant};
+use std::time::Instant;
 
-use ouverture_core::config::Config as ServerConfig;
 use ouverture_core::music::song::Song;
-use ouverture_core::start;
 
 use panes::list;
-use std::error::Error;
 
 use opt::Opt;
 
@@ -33,19 +32,14 @@ use structopt::StructOpt;
 
 use log::LevelFilter::*;
 use std::convert::Into;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
-use ouverture_core::server::{Command as ServerCommand, Reply, Server};
-use ouverture_core::start_with_handlers;
-
-use futures_core::stream::Stream;
-use futures_util::pin_mut;
-use futures_util::stream::StreamExt;
+use ouverture_core::server::{Command as ServerCommand, Server};
 
 use log::{debug, error, info, warn};
 
+use nix::unistd::fork;
 use nix::unistd::ForkResult::{Child, Parent};
-use nix::unistd::{fork, getpid, getppid};
 
 use daemonize::Daemonize;
 
@@ -111,8 +105,7 @@ fn main() -> iced::Result {
             Parent { child: _ } => info!("forked ouverture into server and UI processes"),
         }
     }
-    let mut s = Settings::with_flags(opts);
-    // s.exit_on_close_request = false;
+    let s = Settings::with_flags(opts);
 
     let res = Ouverture::run(s);
 

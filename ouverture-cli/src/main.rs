@@ -1,10 +1,9 @@
 use color_eyre::eyre::eyre;
-use color_eyre::{eyre::Report, eyre::WrapErr, Result, Section};
-use ouverture_core::config::Config;
+use color_eyre::{eyre::Report, Result, Section};
 use ouverture_core::music::song::Song;
 use ouverture_core::server::{Command, Reply, Server};
 use std::error::Error;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::time::Duration;
 use structopt::StructOpt;
 use tokio::time::timeout;

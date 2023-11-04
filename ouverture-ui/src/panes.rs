@@ -17,15 +17,11 @@ use crate::Message;
 use log::{debug, trace, warn};
 
 use std::any::Any;
-use std::rc::Rc;
 
 mod control_bar;
 // pub mod list;
 pub mod list;
 mod menu;
-use ouverture_core::music::song::Song;
-
-use std::time::{Duration, Instant};
 
 impl Panes {
     pub fn new(conf: &Config) -> Self {
@@ -258,13 +254,11 @@ pub trait Content {
     fn as_any_mut(&mut self) -> &mut dyn Any;
 }
 
-struct Editor {
-    id: usize,
-}
+struct Editor {}
 
 impl Editor {
-    fn new(id: usize) -> Self {
-        Editor { id }
+    fn new(_id: usize) -> Self {
+        Editor {}
     }
 }
 impl Content for Editor {

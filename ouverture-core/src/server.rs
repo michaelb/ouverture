@@ -12,21 +12,14 @@ use crate::config::Config;
 use crate::error::ServerError;
 use crate::library::*;
 use crate::music::song::Song;
-use color_eyre::{eyre::eyre, Result};
-
-use rc_event_queue::mpmc::EventQueue;
+use color_eyre::Result;
 
 use crate::audio::AudioState;
 
 use log::{debug, error, info, trace, warn};
-use std::pin::Pin;
 use tokio::runtime::Runtime;
-use tokio::sync::broadcast::{channel, Receiver, Sender};
 
-use crate::audio::{
-    audio_thread_pause, audio_thread_play, audio_thread_play_song, start_audio_thread,
-    stop_audio_thread, AudioTask,
-};
+use crate::audio::AudioTask;
 
 // magic number to identify ovuerture protocol on the wire
 const MAGIC_ID_OUVERTURE_PROTOCOL: u64 = 0xACDE314152960000;
