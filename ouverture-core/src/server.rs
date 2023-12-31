@@ -3,6 +3,7 @@ use bincode;
 use futures_core::stream::Stream;
 use serde::{Deserialize, Serialize};
 use std::error::Error;
+use std::net::SocketAddrV4;
 use std::sync::{Arc, Mutex};
 use strum_macros::{Display, EnumIter, EnumString};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
@@ -20,14 +21,16 @@ use log::{debug, error, info, trace, warn};
 use tokio::runtime::Runtime;
 
 use crate::audio::AudioTask;
+use crate::api_router::{RouterTask, start_router};
 
-// magic number to identify ovuerture protocol on the wire
+// magic number to identify ouverture protocol on the wire
 const MAGIC_ID_OUVERTURE_PROTOCOL: u64 = 0xACDE314152960000;
 
 pub struct Server {
     config: Config,
     audio_task: Option<AudioTask>, // this task has for only role to send queued songs to the audio thread
     // when it finishes playing a song
+    router_task: Option<RouterTask>,
     state: Arc<Mutex<ServerState>>,
 }
 
@@ -43,6 +46,7 @@ impl Server {
         Self {
             config: config.clone(),
             audio_task: None,
+            router_task: None,
             state,
         }
     }
@@ -57,6 +61,9 @@ impl Server {
         self.audio_task = Some(AudioTask::run());
         let audio_state = self.audio_task.as_ref().unwrap().state.clone();
 
+        self.router_task = Some(start_router().await);
+        let internal_router_address = self.router_task.unwrap().addr;
+
         // accept many clients at the same time
         let res = loop {
             let (mut socket, _) = listener.accept().await?;
@@ -66,6 +73,8 @@ impl Server {
 
             let state = self.state.clone();
             let audio_state = audio_state.clone();
+
+            let mut internal_stream = TcpStream::connect(internal_router_address).await?;
 
             let config = self.config.clone();
             let handle = tokio::spawn(async move {

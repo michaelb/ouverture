@@ -6,6 +6,7 @@ pub mod library;
 pub mod logger;
 pub mod music;
 pub mod server;
+pub mod api_router;
 
 use config::Config;
 use server::Server;

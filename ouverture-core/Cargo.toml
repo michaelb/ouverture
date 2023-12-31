@@ -53,6 +53,7 @@ infer = "0.7"
 symphonia = { version = "0.5.2", features= ["all"]}
 
 rc_event_queue = "0.4.2"
+axum="0.7.3"
 
 
 [target.'cfg(target_os = "linux")'.dependencies]
