@@ -20,8 +20,8 @@ use crate::audio::AudioState;
 use log::{debug, error, info, trace, warn};
 use tokio::runtime::Runtime;
 
+use crate::api_router::{start_router, RouterTask};
 use crate::audio::AudioTask;
-use crate::api_router::{RouterTask, start_router};
 
 // magic number to identify ouverture protocol on the wire
 const MAGIC_ID_OUVERTURE_PROTOCOL: u64 = 0xACDE314152960000;
