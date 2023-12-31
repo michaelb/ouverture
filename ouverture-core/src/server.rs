@@ -1,19 +1,24 @@
 use async_stream::try_stream;
 use bincode;
+use futures_core::Future;
 use futures_core::stream::Stream;
 use serde::{Deserialize, Serialize};
 use std::error::Error;
 use std::net::SocketAddrV4;
 use std::sync::{Arc, Mutex};
+use structopt::lazy_static::lazy_static;
 use strum_macros::{Display, EnumIter, EnumString};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::{TcpListener, TcpStream};
 
+use std::sync::atomic::Ordering;
+
 use crate::config::Config;
 use crate::error::ServerError;
-use crate::library::*;
+use crate::{library::*, STOP_FLAG};
 use crate::music::song::Song;
 use color_eyre::Result;
+use std::pin::Pin;
 
 use crate::audio::AudioState;
 
@@ -21,146 +26,56 @@ use log::{debug, error, info, trace, warn};
 use tokio::runtime::Runtime;
 
 use crate::audio::AudioTask;
-use crate::api_router::{RouterTask, start_router};
+use crate::router::{start_router, wait, RouterTask};
 
 // magic number to identify ouverture protocol on the wire
 const MAGIC_ID_OUVERTURE_PROTOCOL: u64 = 0xACDE314152960000;
 
 pub struct Server {
-    config: Config,
-    audio_task: Option<AudioTask>, // this task has for only role to send queued songs to the audio thread
+    pub config: Config,
+    pub audio_task: Option<AudioTask>, // this task has for only role to send queued songs to the audio thread
     // when it finishes playing a song
-    router_task: Option<RouterTask>,
-    state: Arc<Mutex<ServerState>>,
-}
-
-/// unique shareable / queryable state
-#[derive(Clone)]
-struct ServerState {
-    stop: bool, // stop-the-server flag
+    pub router_task: Option<RouterTask>,
 }
 
 impl Server {
     pub fn new(config: &Config) -> Self {
-        let state = Arc::new(Mutex::new(ServerState { stop: false }));
-        Self {
+        Server {
             config: config.clone(),
             audio_task: None,
             router_task: None,
-            state,
         }
     }
 
-    pub async fn run(mut self) -> Result<()> {
+    pub fn stop() {
+        debug!("Stopping command received");
+        STOP_FLAG.store(true, Ordering::Relaxed);
+    }
+
+    pub async fn run(&mut self) -> Result<()> {
         let address =
             self.config.server_address.clone() + ":" + &self.config.server_port.to_string();
-        trace!("Starting TCP server on {:?}", &address);
-        let listener = TcpListener::bind(&address).await?;
-        trace!("Server bound to tcp port");
 
         self.audio_task = Some(AudioTask::run());
-        let audio_state = self.audio_task.as_ref().unwrap().state.clone();
 
-        self.router_task = Some(start_router().await);
-        let internal_router_address = self.router_task.unwrap().addr;
+        let server_ref_for_router_ops;
+        unsafe {
+            server_ref_for_router_ops = &mut *(self as *mut Server);
+        } // unsafe borrow, but we won't be badly using self here until the router and all other
+          // stuff is dropped
+        let r = Some(start_router(&address, server_ref_for_router_ops).await);
+        self.router_task = r;
 
-        // accept many clients at the same time
-        let res = loop {
-            let (mut socket, _) = listener.accept().await?;
-            let client_address = socket.peer_addr()?;
-            let client_address = format!("{}", client_address);
-            debug!("New client: {}", client_address);
+        wait(self.router_task.as_mut().unwrap()).await;
 
-            let state = self.state.clone();
-            let audio_state = audio_state.clone();
+        // by this point the router and all API stuff MUST be dropped !
 
-            let mut internal_stream = TcpStream::connect(internal_router_address).await?;
-
-            let config = self.config.clone();
-            let handle = tokio::spawn(async move {
-                let mut buf = [0u8; 8];
-
-                // In a loop, read all the data from the socket
-                loop {
-                    debug!("waiting for new packet");
-                    match socket.read(&mut buf).await {
-                        // socket closed
-                        Ok(n) if n == 0 => break,
-                        Ok(n) => n,
-                        Err(e) => {
-                            debug!("Client disconnected : {}", e);
-                            break;
-                        }
-                    };
-
-                    debug!("got new packet");
-
-                    let size = match Command::decode_size(buf) {
-                        Ok(i) => i,
-                        Err(e) => {
-                            trace!("error: {e:?}, skipping packet"); // TODO: redirect to other
-                                                                     // APIs
-                            continue;
-                        }
-                    };
-                    trace!("size is {size}");
-
-                    let mut payload = vec![0; size as usize];
-                    let res = socket.read_exact(&mut payload[..]).await;
-                    trace!("res from socket = {:?}", res);
-
-                    let decoded_command = bincode::deserialize::<Command>(&payload);
-                    match decoded_command {
-                        Ok(command) => {
-                            info!("{command} command received");
-                            let res =
-                                Self::reply(Reply::Received(command.to_string()), &mut socket)
-                                    .await;
-                            trace!("Replied 'received': status: {:?}", res);
-                            Self::handle_command(
-                                command,
-                                config.clone(),
-                                state.clone(),
-                                audio_state.clone(),
-                                &mut socket,
-                            )
-                            .await;
-
-                            match Self::reply(Reply::Done, &mut socket).await {
-                                Ok(_) => trace!("Replied 'done' successfully"),
-                                Err(e) => warn!("Failed to send 'done' to client: {:?}", e),
-                            }
-
-                            if state.lock().unwrap().stop {
-                                break;
-                            }
-                        }
-                        Err(e) => warn!("failed to decode message payload; err = {:?}", e),
-                    };
-                }
-
-                trace!("Terminating tokio thread allocated to this request");
-            });
-
-            trace!("Waiting on tokio thread join for shutdown...");
-            tokio::join!(handle).0?;
-
-            // in case the Stop command was received, exit the loop.
-            // The binded address is released at 'listener' drop
-            if self.state.lock().unwrap().stop {
-                break Ok(());
-            }
-        };
-
-        self.audio_task.unwrap().stop();
-
-        return res;
+        Ok(())
     }
 
     async fn handle_command(
         command: Command,
         config: Config,
-        state: Arc<Mutex<ServerState>>,
         audio_state: Arc<Mutex<AudioState>>,
         mut socket: &mut TcpStream,
     ) {
@@ -209,7 +124,7 @@ impl Server {
             Command::Ping => (),
             Command::Restart => (),
             Command::Stop => {
-                state.lock().unwrap().stop = true;
+                // state.lock().unwrap().stop = true;
             }
         };
     }

@@ -6,12 +6,14 @@ pub mod library;
 pub mod logger;
 pub mod music;
 pub mod server;
-pub mod api_router;
+pub mod router;
+pub mod api;
 
 use config::Config;
 use server::Server;
+use structopt::lazy_static::lazy_static;
 
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, atomic::AtomicBool};
 
 use server::Command::Stop;
 
@@ -24,15 +26,18 @@ use signal_hook_tokio::Signals;
 use color_eyre::{eyre::eyre, Result};
 use log::{debug, error, info, trace, warn};
 
+lazy_static! {
+    static ref STOP_FLAG : AtomicBool = AtomicBool::new(false);
+}
+
 #[tokio::main]
 pub async fn start_with_handlers(config: Config) -> Result<()> {
     // Set up signal handlers
     let first_signal = Arc::new(Mutex::new(true));
-    let address = config.server_address.clone() + ":" + &config.server_port.to_string();
     let signals = Signals::new(&[SIGTERM, SIGINT, SIGQUIT])?;
     let handle = signals.handle();
 
-    let signals_task = tokio::spawn(handle_signals(signals, address, first_signal.clone()));
+    let signals_task = tokio::spawn(handle_signals(signals, first_signal.clone()));
 
     // Start ouverture server (unique async entry point)
     let res = start(config).await;
@@ -82,7 +87,7 @@ pub async fn start(config: Config) -> Result<()> {
         // test_db(config).await;
 
         trace!("database up");
-        let server = Server::new(&config);
+        let mut server =Server::new(&config);
         let server_exit_status = server.run().await;
 
         debug!("stopping database");
@@ -98,7 +103,7 @@ pub async fn start(config: Config) -> Result<()> {
     status
 }
 
-async fn handle_signals(signals: Signals, address: String, first_signal: Arc<Mutex<bool>>) {
+async fn handle_signals(signals: Signals, first_signal: Arc<Mutex<bool>>) {
     let mut signals = signals.fuse();
     while let Some(signal) = signals.next().await {
         match signal {
@@ -107,7 +112,7 @@ async fn handle_signals(signals: Signals, address: String, first_signal: Arc<Mut
                 info!("signal received, shutting down");
                 if *first_signal.lock().unwrap() {
                     *first_signal.lock().unwrap() = false;
-                    let _ = Server::send_wait(&Stop, &address).await;
+                    let _ = Server::stop();
                 } else {
                     std::process::exit(signal);
                 }
