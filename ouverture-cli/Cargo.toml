@@ -15,5 +15,8 @@ color-eyre = "0.5"
 structopt = "0.3"
 
 async-stream = "0.3.3"
-futures-core="*"
-futures-util="*"
+futures-core ="*"
+futures-util ="*"
+
+serde_json = "1.0"
+reqwest = {version = "0.11.23", features = ["json"]}

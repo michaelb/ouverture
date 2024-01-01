@@ -117,7 +117,7 @@ async fn launch_command(opt: &Opt) -> Result<(), Box<dyn Error + Send + Sync>> {
         + &opt.port.as_ref().unwrap_or(&String::from("6603"));
 
     if opt.stop {
-        handle(Server::send(&Command::Stop, &server_addr).await).await;
+        // handle(Server::send(&Command::Stop, &server_addr).await).await;
     }
 
     if let Some(optionnal_path) = opt.play.as_ref() {
@@ -127,44 +127,45 @@ async fn launch_command(opt: &Opt) -> Result<(), Box<dyn Error + Send + Sync>> {
         } else {
             None
         };
-        handle(Server::send(&Command::Play(opt_song.clone()), &server_addr).await).await;
+        // handle(Server::send(&Command::Play(opt_song.clone()), &server_addr).await).await;
+        play(opt_song, &server_addr).await;
     }
 
     if let Some(path) = opt.enqueue.as_ref() {
         let path = PathBuf::from(path);
         let song = Song::from_path(&path);
-        handle(Server::send(&Command::Enqueue(song.clone()), &server_addr).await).await;
+        enqueue(song, &server_addr).await;
     }
 
     if opt.pause {
-        handle(Server::send(&Command::Pause, &server_addr).await).await;
+        pause(&server_addr).await
     }
     if opt.toggle {
-        handle(Server::send(&Command::Toggle, &server_addr).await).await;
+        toggle(&server_addr).await
     }
     if opt.next {
-        handle(Server::send(&Command::Next, &server_addr).await).await;
+        next(&server_addr).await
     }
     if opt.previous {
-        handle(Server::send(&Command::Previous, &server_addr).await).await;
+        previous(&server_addr).await
     }
     if opt.scan {
-        handle(Server::send(&Command::Scan, &server_addr).await).await;
+        scan(&server_addr).await
     }
 
     if let Some(seek) = opt.seek {
-        handle(
-            Server::send(
-                &Command::Seek(std::cmp::min(seek, 100) as f32 / 100f32),
-                &server_addr,
-            )
-            .await,
-        )
-        .await;
+        // handle(
+        //     Server::send(
+        //         &Command::Seek(std::cmp::min(seek, 100) as f32 / 100f32),
+        //         &server_addr,
+        //     )
+        //     .await,
+        // )
+        // .await;
     }
 
     if let Some(optionnal_str) = opt.list.as_ref() {
-        handle(Server::send(&Command::GetList(optionnal_str.clone()), &server_addr).await).await;
+        // handle(Server::send(&Command::GetList(optionnal_str.clone()), &server_addr).await).await;
     }
 
     if opt.ping {
@@ -195,18 +196,58 @@ async fn launch_command(opt: &Opt) -> Result<(), Box<dyn Error + Send + Sync>> {
     Ok(())
 }
 
-async fn handle<T>(stream: T)
-where
-    T: Stream<Item = Result<Reply, Box<dyn Error + Send + Sync>>>,
-{
-    pin_mut!(stream);
-    while let Some(reply) = stream.next().await {
-        match reply {
-            Ok(Reply::Done) => println!("Done!"),
-            Ok(Reply::Received(s)) => println!("Server received '{}' command", s),
-            Ok(Reply::List(l)) => println!("Result: {:?}", l),
-            Err(e) => println!("Error: {:?}", e),
-            _ => println!("unamagned reply yet"),
-        }
+async fn get(addr: &str, endpoint: &str) {
+    let client = reqwest::Client::new();
+    client
+        .get("http://".to_string() + addr + "/api/native/" + endpoint)
+        .send()
+        .await
+        .unwrap();
+}
+
+async fn play(opt_song: Option<Song>, addr: &str) {
+    let client = reqwest::Client::new();
+    if let Some(song) = opt_song {
+        client
+            .get("http://".to_string() + addr + "/api/native/play")
+            .json(&song)
+            .send()
+            .await
+            .unwrap();
+    } else {
+        client
+            .get("http://".to_string() + addr + "/api/native/play")
+            .send()
+            .await
+            .unwrap();
     }
+}
+async fn enqueue(song: Song, addr: &str) {
+    let client = reqwest::Client::new();
+    client
+        .get("http://".to_string() + addr + "/api/native/enqueue")
+        .json(&song)
+        .send()
+        .await
+        .unwrap();
+}
+
+async fn pause(addr: &str) {
+    get(addr, "pause").await
+}
+
+async fn next(addr: &str) {
+    get(addr, "next").await
+}
+
+async fn previous(addr: &str) {
+    get(addr, "previous").await
+}
+
+async fn scan(addr: &str) {
+    get(addr, "scan").await
+}
+
+async fn toggle(addr: &str) {
+    get(addr, "toggle").await
 }
