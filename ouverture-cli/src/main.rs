@@ -162,10 +162,12 @@ async fn launch_command(opt: &Opt) -> Result<(), Box<dyn Error + Send + Sync>> {
         //     .await,
         // )
         // .await;
+        seekfn(&server_addr, std::cmp::min(seek, 100) as f32 / 100f32).await;
     }
 
     if let Some(optionnal_str) = opt.list.as_ref() {
         // handle(Server::send(&Command::GetList(optionnal_str.clone()), &server_addr).await).await;
+        list(&server_addr, optionnal_str.clone()).await;
     }
 
     if opt.ping {
@@ -225,7 +227,7 @@ async fn play(opt_song: Option<Song>, addr: &str) {
 async fn enqueue(song: Song, addr: &str) {
     let client = reqwest::Client::new();
     client
-        .get("http://".to_string() + addr + "/api/native/enqueue")
+        .post("http://".to_string() + addr + "/api/native/enqueue")
         .json(&song)
         .send()
         .await
@@ -250,4 +252,37 @@ async fn scan(addr: &str) {
 
 async fn toggle(addr: &str) {
     get(addr, "toggle").await
+}
+
+async fn seekfn(addr: &str, seek: f32) {
+    let client = reqwest::Client::new();
+    client
+        .post("http://".to_string() + addr + "/api/native/seek")
+        .json(&seek)
+        .send()
+        .await
+        .unwrap();
+}
+
+async fn list(addr: &str, opt_str: Option<String>) {
+    let client = reqwest::Client::new();
+    let resp = if let Some(str) = opt_str {
+        client
+            .get("http://".to_string() + addr + "/api/native/list")
+            .body(str)
+            .send()
+            .await
+            .unwrap()
+            .json::<Vec<Song>>()
+            .await.unwrap()
+    } else {
+        client
+            .get("http://".to_string() + addr + "/api/native/list")
+            .send()
+            .await
+            .unwrap()
+            .json::<Vec<Song>>()
+            .await.unwrap()
+    };
+    println!("{:?}", resp);
 }
