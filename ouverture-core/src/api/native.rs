@@ -5,8 +5,14 @@ use axum::response::{Response, IntoResponse};
 use axum::Router;
 use serde_json::Value;
 
+use std::{net::SocketAddr, sync::atomic::Ordering};
+
 use crate::music::song::Song;
 use crate::server::Server;
+
+use crate::STOP_FLAG;
+
+use crate::audio::AudioState;
 
 use log::info;
 
@@ -24,7 +30,12 @@ impl Native {
             .route("/scan", get(scan))
             .route("/enqueue", post(enqueue))
             .route("/seek", post(seek))
-            .route("/list", get(getlist))
+            .route("/seek", get(getseek))
+            .route("/list", get(get_list))
+            .route("/current_song", get(get_current_song))
+            .route("/current_seek", get(get_current_seek))
+            .route("/stop", get(stop))
+            .route("/ping", post(ping))
     }
 }
 
@@ -59,7 +70,16 @@ async fn seek(State(server): State<&Server>, payload: Json<f32>) {
         .set_seek(seek);
 }
 
-async fn getlist(State(server): State<&Server>, payload: Option<Json<String>>) -> Response {
+async fn getseek(State(server): State<&Server>) -> Response {
+    let seek = AudioState::get_seek(server
+        .audio_task
+        .as_ref()
+        .unwrap()
+        .state.clone()).await;
+    Json(seek).into_response()
+}
+
+async fn get_list(State(server): State<&Server>, payload: Option<Json<String>>) -> Response {
     let list = if let Some(payload) = payload {
         let Json(opt_string) = payload;
         crate::library::list(&server.config, Some(opt_string)).await
@@ -127,4 +147,34 @@ async fn previous(State(server): State<&Server>) {
 
 async fn scan(State(server): State<&Server>) {
     crate::library::scan(&server.config).await;
+}
+
+async fn get_current_song(State(server): State<&Server>) -> Response {
+    let current_song = server
+        .audio_task
+        .as_ref()
+        .unwrap()
+        .state
+        .lock()
+        .unwrap().current_song.clone();
+    Json::from(current_song).into_response()
+}
+
+async fn get_current_seek(State(server): State<&Server>) -> Response {
+    let current_seek = server
+        .audio_task
+        .as_ref()
+        .unwrap()
+        .state
+        .lock()
+        .unwrap().current_seek.clone();
+    Json::from(current_seek).into_response()
+}
+
+async fn stop(State(server): State<&Server>) {
+    STOP_FLAG.store(true, Ordering::Relaxed)
+}
+
+async fn ping(payload: Json<Song>) -> Response {
+    payload.into_response()
 }

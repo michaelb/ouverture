@@ -193,7 +193,7 @@ pub enum Message {
 
     // List message
     AskRefreshList(pane_grid::Pane),
-    ReceivedNewList(pane_grid::Pane, Rc<ouverture_core::server::Reply>),
+    ReceivedNewList(Vec<Song>),
     ListMessage(list::ListMessage),
     ReceivedNewCurrentSong(Option<Song>, f32),
 

@@ -36,10 +36,15 @@ impl ControlBar {
         self.slider_value = value;
 
         Command::single(Action::Future(Box::pin(async move {
-            Server::send_wait(&ServerCommand::Seek((value as f32) / 4096f32), &address)
+            let client = reqwest::Client::new();
+            let seek = value as f32 / 4096f32;
+
+            client
+                .get("http://".to_string() + &address + "/api/native/seek")
+                .send()
                 .await
                 .unwrap();
-            debug!("asked for list refresh");
+            debug!("seeked song");
             Message::Nothing
         })))
     }

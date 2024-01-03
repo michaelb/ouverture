@@ -2,7 +2,7 @@ use iced::executor;
 use iced::keyboard;
 use iced::theme::Theme;
 use iced::widget::pane_grid::{self, PaneGrid};
-use iced::widget::{button, column, container, scrollable, text};
+use iced::widget::{button, column, container, row, scrollable, text};
 use iced::{Application, Command, Element, Length};
 
 pub struct Panes {
@@ -16,7 +16,7 @@ use crate::config::Config;
 use crate::Message;
 use log::{debug, trace, warn};
 
-use std::any::Any;
+use std::any::{Any, TypeId};
 
 mod control_bar;
 // pub mod list;
@@ -170,15 +170,27 @@ impl Application for Panes {
                     .unwrap();
                 return list.update(AskRefreshList(pane));
             }
-            ReceivedNewList(pane, reply) => {
-                let list: &mut list::List = self
-                    .panes
-                    .get_mut(&pane)
-                    .unwrap()
-                    .as_any_mut()
-                    .downcast_mut::<list::List>()
-                    .unwrap();
-                return list.update(ReceivedNewList(pane, reply));
+            ReceivedNewList(songs) => {
+                let long_self : &mut Panes = unsafe { &mut *(self as *mut Panes) };
+                // acutally, we won't use self after the a couple lines,
+                // but rustc can't tell
+                let commands: Vec<_> = long_self.panes
+                    .iter_mut()
+                    .map(|t| t.1)
+                    .filter(|c| c.type_id() == TypeId::of::<list::List>())
+                    .map(|c| c.as_any_mut().downcast_mut::<list::List>().unwrap())
+                    .map(|l| l.update(ReceivedNewList(songs.clone())))
+                    .collect();
+                // let commands: Vec<_> = self
+                //     .panes
+                //     .iter_mut()
+                //     .map(|t| t.1)
+                //     .filter(|c| c.type_id() == TypeId::of::<list::List>())
+                //     .map(|c| c.as_any_mut().downcast_mut::<list::List>().unwrap())
+                //     .map(|l| l.update(ReceivedNewList(songs)))
+                //     .collect();
+                let mut command = Command::batch( commands);
+                return command;
             }
             // ResizeColumn(pane, event) => {
             //     let mut list: &mut list::List = self
@@ -225,6 +237,11 @@ impl Application for Panes {
     }
 }
 
+
+// fn get_content<'a>(panes: &'a mut pane_grid::State<Box<dyn Content>>, pane : &pane_grid::Pane) -> &'a mut Box::<dyn Content> {
+//     panes.get_mut(pane).unwrap_or(&mut (Box::new(NoContent{}) as Box<dyn Content>))
+// }
+
 fn handle_hotkey(key_code: keyboard::KeyCode) -> Option<Message> {
     use keyboard::KeyCode;
     use pane_grid::{Axis, Direction};
@@ -252,6 +269,18 @@ pub trait Content {
     }
     fn as_any(&self) -> &dyn Any;
     fn as_any_mut(&mut self) -> &mut dyn Any;
+}
+struct NoContent {} // never implemented
+impl Content for NoContent {
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+    fn as_any_mut(&mut self) -> &mut dyn Any {
+        self
+    }
+    fn view(&self, pane: pane_grid::Pane, total_panes: usize) -> Element<Message> {
+        text("").into()
+    }
 }
 
 struct Editor {}

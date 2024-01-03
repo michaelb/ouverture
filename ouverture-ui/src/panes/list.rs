@@ -141,8 +141,8 @@ impl Content for List {
     fn update(&mut self, message: Message) -> Command<Message> {
         return match message {
             Message::AskRefreshList(pane) => self.ask_refresh_list(pane),
-            Message::ReceivedNewList(_pane, reply) => {
-                self.got_refresh_list(&reply);
+            Message::ReceivedNewList(reply) => {
+                self.got_refresh_list(reply);
                 Command::none()
             }
             Message::ListMessage(ListMessage::ClickRow(Some(i))) => {
@@ -202,21 +202,23 @@ impl List {
         let address =
             self.config.server_address.to_string() + ":" + &self.config.server_port.to_string();
 
-        Command::single(Action::Future(Box::pin(async move {
-            let reply = Server::send_wait(&ServerCommand::GetList(None), &address)
+       Command::single(Action::Future(Box::pin(async move {
+            let client = reqwest::Client::new();
+
+            client
+                .get("http://".to_string() + &address + "/api/native/list")
+                .send()  // TODO return the list
                 .await
                 .unwrap();
-            debug!("asked for list refresh");
-            Message::ReceivedNewList(pane, Rc::new(reply))
+            debug!("got new list song");
+            Message::Nothing
         })))
+
     }
 
-    pub fn got_refresh_list(&mut self, reply: &ouverture_core::server::Reply) {
-        if let ouverture_core::server::Reply::List(vec_songs) = reply {
-            debug!("got reply with new list");
-            let songs: Vec<Song> = vec_songs.iter().map(|s| s.clone().into()).collect();
+    pub fn got_refresh_list(&mut self, vec_songs: Vec<Song>) {
+        let songs: Vec<Song> = vec_songs.iter().map(|s| s.clone().into()).collect();
 
-            self.rows = songs.into_iter().map(|s| (s, false)).collect();
-        }
+        self.rows = songs.into_iter().map(|s| (s, false)).collect();
     }
 }
