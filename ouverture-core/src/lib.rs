@@ -1,3 +1,4 @@
+pub mod api;
 pub mod audio;
 pub mod config;
 pub mod database;
@@ -5,17 +6,14 @@ pub mod error;
 pub mod library;
 pub mod logger;
 pub mod music;
-pub mod server;
 pub mod router;
-pub mod api;
+pub mod server;
 
 use config::Config;
 use server::Server;
 use structopt::lazy_static::lazy_static;
 
-use std::sync::{Arc, Mutex, atomic::AtomicBool};
-
-
+use std::sync::{atomic::AtomicBool, Arc, Mutex};
 
 use futures::stream::StreamExt;
 
@@ -27,7 +25,7 @@ use color_eyre::{eyre::eyre, Result};
 use log::{debug, error, info, trace, warn};
 
 lazy_static! {
-    static ref STOP_FLAG : AtomicBool = AtomicBool::new(false);
+    static ref STOP_FLAG: AtomicBool = AtomicBool::new(false);
 }
 
 #[tokio::main]
@@ -87,7 +85,7 @@ pub async fn start(config: Config) -> Result<()> {
         // test_db(config).await;
 
         trace!("database up");
-        let mut server =Server::new(&config);
+        let mut server = Server::new(&config);
         let server_exit_status = server.run().await;
 
         debug!("stopping database");

@@ -7,8 +7,6 @@ use crate::config::Config;
 use crate::Message;
 use ouverture_core::music::song::Song;
 
-
-
 use log::debug;
 pub struct ControlBar {
     slider_value: u32,
@@ -16,9 +14,6 @@ pub struct ControlBar {
     config: Config,
 }
 use iced_runtime::command::Action;
-
-
-
 
 impl ControlBar {
     pub fn new(c: &Config) -> Self {
@@ -57,20 +52,22 @@ impl ControlBar {
         Command::single(Action::Future(Box::pin(async move {
             let client = reqwest::Client::new();
             let song = client
-            .get("http://".to_string() + &address + "/api/native/current_song")
-            .send()
-            .await
-            .unwrap()
-            .json::<Option<Song>>()
-            .await.unwrap();
+                .get("http://".to_string() + &address + "/api/native/current_song")
+                .send()
+                .await
+                .unwrap()
+                .json::<Option<Song>>()
+                .await
+                .unwrap();
 
             let seek = client
-            .get("http://".to_string() + &address + "/api/native/seek")
-            .send()
-            .await
-            .unwrap()
-            .json::<f32>()
-            .await.unwrap();
+                .get("http://".to_string() + &address + "/api/native/seek")
+                .send()
+                .await
+                .unwrap()
+                .json::<f32>()
+                .await
+                .unwrap();
             debug!("asked for new current song, got {song:?}");
 
             Message::ReceivedNewCurrentSong(song, seek)

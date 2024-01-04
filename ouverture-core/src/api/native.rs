@@ -1,11 +1,9 @@
-
 use axum::extract::{Json, State};
+use axum::response::{IntoResponse, Response};
 use axum::routing::{get, post};
-use axum::response::{Response, IntoResponse};
 use axum::Router;
 
-
-use std::{sync::atomic::Ordering};
+use std::sync::atomic::Ordering;
 
 use crate::music::song::Song;
 use crate::server::Server;
@@ -13,8 +11,6 @@ use crate::server::Server;
 use crate::STOP_FLAG;
 
 use crate::audio::AudioState;
-
-
 
 pub struct Native {}
 
@@ -71,11 +67,7 @@ async fn seek(State(server): State<&Server>, payload: Json<f32>) {
 }
 
 async fn getseek(State(server): State<&Server>) -> Response {
-    let seek = AudioState::get_seek(server
-        .audio_task
-        .as_ref()
-        .unwrap()
-        .state.clone()).await;
+    let seek = AudioState::get_seek(server.audio_task.as_ref().unwrap().state.clone()).await;
     Json(seek).into_response()
 }
 
@@ -156,7 +148,9 @@ async fn get_current_song(State(server): State<&Server>) -> Response {
         .unwrap()
         .state
         .lock()
-        .unwrap().current_song.clone();
+        .unwrap()
+        .current_song
+        .clone();
     Json::from(current_song).into_response()
 }
 
@@ -167,7 +161,9 @@ async fn get_current_seek(State(server): State<&Server>) -> Response {
         .unwrap()
         .state
         .lock()
-        .unwrap().current_seek.clone();
+        .unwrap()
+        .current_seek
+        .clone();
     Json::from(current_seek).into_response()
 }
 

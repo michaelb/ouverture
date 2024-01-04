@@ -10,11 +10,8 @@ use crate::Message;
 
 use iced_runtime::command::Action;
 
-
 use crate::config::Config;
 use ouverture_core::music::song::Song;
-
-
 
 use crate::Theme;
 use iced::widget::button;

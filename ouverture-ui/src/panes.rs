@@ -172,11 +172,12 @@ impl Application for Panes {
             }
             ReceivedNewList(songs) => {
                 debug!("received new songs list: {:?}", songs);
-                let long_self : &mut Panes = unsafe { &mut *(self as *mut Panes) };
+                let long_self: &mut Panes = unsafe { &mut *(self as *mut Panes) };
                 // acutally, we won't use self after the a couple lines,
                 // but rustc can't tell
                 debug!("list pane type {:?}", TypeId::of::<list::List>());
-                let commands: Vec<_> = long_self.panes
+                let commands: Vec<_> = long_self
+                    .panes
                     .iter_mut()
                     .map(|t| t.1)
                     .map(|c| c.as_any_mut().downcast_mut::<list::List>())
@@ -191,7 +192,7 @@ impl Application for Panes {
                 //     .map(|c| c.as_any_mut().downcast_mut::<list::List>().unwrap())
                 //     .map(|l| l.update(ReceivedNewList(songs)))
                 //     .collect();
-                let command = Command::batch( commands);
+                let command = Command::batch(commands);
                 return command;
             }
             // ResizeColumn(pane, event) => {
@@ -238,7 +239,6 @@ impl Application for Panes {
         .into()
     }
 }
-
 
 // fn get_content<'a>(panes: &'a mut pane_grid::State<Box<dyn Content>>, pane : &pane_grid::Pane) -> &'a mut Box::<dyn Content> {
 //     panes.get_mut(pane).unwrap_or(&mut (Box::new(NoContent{}) as Box<dyn Content>))

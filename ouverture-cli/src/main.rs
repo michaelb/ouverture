@@ -8,8 +8,6 @@ use std::time::Duration;
 use structopt::StructOpt;
 use tokio::time::timeout;
 
-
-
 #[derive(Debug, StructOpt)]
 #[structopt(
     name = "ouverture-cli",
