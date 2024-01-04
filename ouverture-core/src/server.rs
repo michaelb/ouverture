@@ -1,15 +1,15 @@
 use async_stream::try_stream;
 use bincode;
-use futures_core::Future;
+
 use futures_core::stream::Stream;
 use serde::{Deserialize, Serialize};
 use std::error::Error;
-use std::net::SocketAddrV4;
+
 use std::sync::{Arc, Mutex};
-use structopt::lazy_static::lazy_static;
+
 use strum_macros::{Display, EnumIter, EnumString};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
-use tokio::net::{TcpListener, TcpStream};
+use tokio::net::{TcpStream};
 
 use std::sync::atomic::Ordering;
 
@@ -18,11 +18,11 @@ use crate::error::ServerError;
 use crate::{library::*, STOP_FLAG};
 use crate::music::song::Song;
 use color_eyre::Result;
-use std::pin::Pin;
+
 
 use crate::audio::AudioState;
 
-use log::{debug, error, info, trace, warn};
+use log::{debug, error, trace, warn};
 use tokio::runtime::Runtime;
 
 use crate::audio::AudioTask;

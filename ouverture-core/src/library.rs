@@ -32,7 +32,7 @@ pub async fn scan(config: &Config) {
     }
 }
 
-pub async fn list(config: &Config, query: Option<String>) -> Vec<Song> {
+pub async fn list(config: &Config, _query: Option<String>) -> Vec<Song> {
     let database_url = "postgres://ouverture:ouverture@localhost:".to_string()
         + &config.database_port.to_string()
         + "/ouverture";

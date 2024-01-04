@@ -7,7 +7,7 @@ use crate::config::Config;
 use crate::Message;
 use ouverture_core::music::song::Song;
 
-use ouverture_core::server::Reply;
+
 
 use log::debug;
 pub struct ControlBar {
@@ -17,8 +17,8 @@ pub struct ControlBar {
 }
 use iced_runtime::command::Action;
 
-use ouverture_core::server::Command as ServerCommand;
-use ouverture_core::server::Server;
+
+
 
 impl ControlBar {
     pub fn new(c: &Config) -> Self {
@@ -37,7 +37,7 @@ impl ControlBar {
 
         Command::single(Action::Future(Box::pin(async move {
             let client = reqwest::Client::new();
-            let seek = value as f32 / 4096f32;
+            let _seek = value as f32 / 4096f32;
 
             client
                 .get("http://".to_string() + &address + "/api/native/seek")

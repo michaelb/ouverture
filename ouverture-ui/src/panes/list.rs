@@ -9,12 +9,12 @@ use super::Content;
 use crate::Message;
 
 use iced_runtime::command::Action;
-use std::rc::Rc;
+
 
 use crate::config::Config;
 use ouverture_core::music::song::Song;
-use ouverture_core::server::Command as ServerCommand;
-use ouverture_core::server::Server;
+
+
 
 use crate::Theme;
 use iced::widget::button;
@@ -199,7 +199,7 @@ impl List {
         }
     }
 
-    pub fn ask_refresh_list(&mut self, pane: pane_grid::Pane) -> Command<Message> {
+    pub fn ask_refresh_list(&mut self, _pane: pane_grid::Pane) -> Command<Message> {
         let address =
             self.config.server_address.to_string() + ":" + &self.config.server_port.to_string();
 

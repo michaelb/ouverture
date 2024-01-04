@@ -1,16 +1,14 @@
 use color_eyre::eyre::eyre;
 use color_eyre::{eyre::Report, Result, Section};
 use ouverture_core::music::song::Song;
-use ouverture_core::server::{Command, Reply, Server};
+
 use std::error::Error;
 use std::path::PathBuf;
 use std::time::Duration;
 use structopt::StructOpt;
 use tokio::time::timeout;
 
-use futures_core::stream::Stream;
-use futures_util::pin_mut;
-use futures_util::stream::StreamExt;
+
 
 #[derive(Debug, StructOpt)]
 #[structopt(

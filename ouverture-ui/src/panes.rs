@@ -2,7 +2,7 @@ use iced::executor;
 use iced::keyboard;
 use iced::theme::Theme;
 use iced::widget::pane_grid::{self, PaneGrid};
-use iced::widget::{button, column, container, row, scrollable, text};
+use iced::widget::{button, column, container, scrollable, text};
 use iced::{Application, Command, Element, Length};
 
 pub struct Panes {
@@ -16,7 +16,7 @@ use crate::config::Config;
 use crate::Message;
 use log::{debug, trace, warn};
 
-use std::any::{Any, TypeId, type_name};
+use std::any::{Any, TypeId};
 
 mod control_bar;
 // pub mod list;
@@ -191,7 +191,7 @@ impl Application for Panes {
                 //     .map(|c| c.as_any_mut().downcast_mut::<list::List>().unwrap())
                 //     .map(|l| l.update(ReceivedNewList(songs)))
                 //     .collect();
-                let mut command = Command::batch( commands);
+                let command = Command::batch( commands);
                 return command;
             }
             // ResizeColumn(pane, event) => {
@@ -280,7 +280,7 @@ impl Content for NoContent {
     fn as_any_mut(&mut self) -> &mut dyn Any {
         self
     }
-    fn view(&self, pane: pane_grid::Pane, total_panes: usize) -> Element<Message> {
+    fn view(&self, _pane: pane_grid::Pane, _total_panes: usize) -> Element<Message> {
         text("").into()
     }
 }

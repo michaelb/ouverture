@@ -15,7 +15,7 @@ use structopt::lazy_static::lazy_static;
 
 use std::sync::{Arc, Mutex, atomic::AtomicBool};
 
-use server::Command::Stop;
+
 
 use futures::stream::StreamExt;
 

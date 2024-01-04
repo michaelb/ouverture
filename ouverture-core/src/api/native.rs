@@ -1,11 +1,11 @@
-use axum::extract::rejection::JsonRejection;
+
 use axum::extract::{Json, State};
 use axum::routing::{get, post};
 use axum::response::{Response, IntoResponse};
 use axum::Router;
-use serde_json::Value;
 
-use std::{net::SocketAddr, sync::atomic::Ordering};
+
+use std::{sync::atomic::Ordering};
 
 use crate::music::song::Song;
 use crate::server::Server;
@@ -14,7 +14,7 @@ use crate::STOP_FLAG;
 
 use crate::audio::AudioState;
 
-use log::info;
+
 
 pub struct Native {}
 
@@ -171,7 +171,7 @@ async fn get_current_seek(State(server): State<&Server>) -> Response {
     Json::from(current_seek).into_response()
 }
 
-async fn stop(State(server): State<&Server>) {
+async fn stop(State(_server): State<&Server>) {
     STOP_FLAG.store(true, Ordering::Relaxed)
 }
 

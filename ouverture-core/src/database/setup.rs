@@ -1,7 +1,7 @@
 use sea_orm::sea_query::{ColumnDef, TableCreateStatement};
 use sea_orm::{error::*, sea_query, ConnectionTrait, DbConn, ExecResult};
 
-use crate::music::song::{Song, SongSource};
+use crate::music::song::{Song};
 use sea_orm::prelude::*;
 use sea_orm::{entity::*, query::*};
 

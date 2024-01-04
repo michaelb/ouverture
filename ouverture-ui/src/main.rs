@@ -16,7 +16,7 @@ use style::ThemeType;
 pub mod panes;
 use panes::Panes;
 
-use std::rc::Rc;
+
 use std::time::Instant;
 
 use ouverture_core::music::song::Song;
@@ -26,7 +26,7 @@ use panes::list;
 use opt::Opt;
 
 use ouverture_core::logger::{setup_logger, LogDestination::*};
-use ouverture_core::server::Command::Stop;
+
 
 use structopt::StructOpt;
 
@@ -34,7 +34,7 @@ use log::LevelFilter::*;
 use std::convert::Into;
 use std::path::PathBuf;
 
-use ouverture_core::server::{Command as ServerCommand, Server};
+
 
 use log::{debug, error, info, warn};
 
