@@ -142,6 +142,7 @@ impl Content for List {
         return match message {
             Message::AskRefreshList(pane) => self.ask_refresh_list(pane),
             Message::ReceivedNewList(reply) => {
+                debug!("pane received new list");
                 self.got_refresh_list(reply);
                 Command::none()
             }
@@ -202,18 +203,20 @@ impl List {
         let address =
             self.config.server_address.to_string() + ":" + &self.config.server_port.to_string();
 
-       Command::single(Action::Future(Box::pin(async move {
+        Command::single(Action::Future(Box::pin(async move {
             let client = reqwest::Client::new();
 
-            client
+            let songs = client
                 .get("http://".to_string() + &address + "/api/native/list")
-                .send()  // TODO return the list
+                .send() // TODO return the list
+                .await
+                .unwrap()
+                .json::<Vec<Song>>()
                 .await
                 .unwrap();
             debug!("got new list song");
-            Message::Nothing
+            Message::ReceivedNewList(songs)
         })))
-
     }
 
     pub fn got_refresh_list(&mut self, vec_songs: Vec<Song>) {

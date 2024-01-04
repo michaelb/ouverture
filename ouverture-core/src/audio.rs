@@ -101,6 +101,7 @@ impl AudioState {
         }
     }
 
+    /// return seek as f32 [0,1] describing progress
     pub async fn get_seek(audio_state: Arc<Mutex<AudioState>>) -> f32 {
         let event_count_before = audio_state.lock().unwrap().events_received;
         audio_thread_send_cmd(AudioCommand::GetSeek, &audio_state.lock().unwrap().cmd_tx);

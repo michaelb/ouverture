@@ -113,7 +113,9 @@ fn main() -> iced::Result {
     // send a 'stop' command to the server if not external and not background
     if (!ui_config.external_server) && (!ui_config.background) {
         let address = ui_config.server_address + ":" + &ui_config.server_port.to_string();
-        let server_stop_res = Server::send_wait_sync(&Stop, &address);
+
+        let server_stop_res =
+            reqwest::blocking::get("http://".to_string() + &address + "/api/native/stop");
         match server_stop_res {
             Ok(_) => info!("Server stopped gracefully"),
             Err(e) => warn!("Failed to stop ouverture server at address {address}: {e:?}"),
@@ -233,34 +235,59 @@ impl<'a> Application for Ouverture {
             }
 
             Message::Play(opt_song) => Command::single(Action::Future(Box::pin(async move {
-                let reply = Server::send_wait(&ServerCommand::Play(opt_song), &address)
-                    .await
-                    .unwrap();
-                debug!("GUI asked for play (status = {:?}", reply);
+                debug!("GUI asking for play");
+                let client = reqwest::Client::new();
+                let status = if let Some(song) = opt_song {
+                    client
+                        .get("http://".to_string() + &address + "/api/native/play")
+                        .json(&song)
+                        .send()
+                        .await
+                        .unwrap();
+                } else {
+                    client
+                        .get("http://".to_string() + &address + "/api/native/play")
+                        .send()
+                        .await
+                        .unwrap();
+                };
+
+                debug!("GUI asked for play (status = {:?}", status);
                 Message::Nothing
             }))),
             Message::Toggle => Command::single(Action::Future(Box::pin(async move {
                 debug!("GUI asking for toggle");
-                let reply = Server::send_wait(&ServerCommand::Toggle, &address)
+                let client = reqwest::Client::new();
+                let status = client
+                    .get("http://".to_string() + &address + "/api/native/toggle")
+                    .send()
                     .await
                     .unwrap();
-                debug!("GUI asked for toggle, server replied: {:?}", reply);
+
+                debug!("GUI asked for toggle, server replied: {:?}", status);
                 Message::Nothing
             }))),
             Message::Next => Command::single(Action::Future(Box::pin(async move {
                 debug!("GUI asking for next");
-                let reply = Server::send_wait(&ServerCommand::Next, &address)
+                let client = reqwest::Client::new();
+                let status = client
+                    .get("http://".to_string() + &address + "/api/native/next")
+                    .send()
                     .await
                     .unwrap();
-                debug!("GUI asked for next, server replied: {:?}", reply);
+                debug!("GUI asked for next, server replied: {:?}", status);
                 Message::Nothing
             }))),
             Message::Previous => Command::single(Action::Future(Box::pin(async move {
                 debug!("GUI asking for previous");
-                let reply = Server::send_wait(&ServerCommand::Previous, &address)
+
+                let client = reqwest::Client::new();
+                let status = client
+                    .get("http://".to_string() + &address + "/api/native/previous")
+                    .send()
                     .await
                     .unwrap();
-                debug!("GUI asked for previous, server replied: {:?}", reply);
+                debug!("GUI asked for previous, server replied: {:?}", status);
                 Message::Nothing
             }))),
             any => {

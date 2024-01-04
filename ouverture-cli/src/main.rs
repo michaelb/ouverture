@@ -117,7 +117,7 @@ async fn launch_command(opt: &Opt) -> Result<(), Box<dyn Error + Send + Sync>> {
         + &opt.port.as_ref().unwrap_or(&String::from("6603"));
 
     if opt.stop {
-        // handle(Server::send(&Command::Stop, &server_addr).await).await;
+        stop(&server_addr).await
     }
 
     if let Some(optionnal_path) = opt.play.as_ref() {
@@ -127,7 +127,6 @@ async fn launch_command(opt: &Opt) -> Result<(), Box<dyn Error + Send + Sync>> {
         } else {
             None
         };
-        // handle(Server::send(&Command::Play(opt_song.clone()), &server_addr).await).await;
         play(opt_song, &server_addr).await;
     }
 
@@ -154,29 +153,22 @@ async fn launch_command(opt: &Opt) -> Result<(), Box<dyn Error + Send + Sync>> {
     }
 
     if let Some(seek) = opt.seek {
-        // handle(
-        //     Server::send(
-        //         &Command::Seek(std::cmp::min(seek, 100) as f32 / 100f32),
-        //         &server_addr,
-        //     )
-        //     .await,
-        // )
-        // .await;
         seekfn(&server_addr, std::cmp::min(seek, 100) as f32 / 100f32).await;
     }
 
     if let Some(optionnal_str) = opt.list.as_ref() {
-        // handle(Server::send(&Command::GetList(optionnal_str.clone()), &server_addr).await).await;
         list(&server_addr, optionnal_str.clone()).await;
     }
 
     if opt.ping {
         loop {
             let start = std::time::Instant::now();
-            let status_with_timeout = timeout(
-                Duration::from_secs(1),
-                Server::send_wait(&Command::Ping, &server_addr),
-            )
+            let status_with_timeout = timeout(Duration::from_secs(1), {
+                let client = reqwest::Client::new();
+                client
+                    .get("http://".to_string() + &server_addr + "/api/native/ping")
+                    .send()
+            })
             .await;
             let duration = start.elapsed();
             match status_with_timeout {
@@ -238,6 +230,10 @@ async fn pause(addr: &str) {
     get(addr, "pause").await
 }
 
+async fn stop(addr: &str) {
+    get(addr, "stop").await
+}
+
 async fn next(addr: &str) {
     get(addr, "next").await
 }
@@ -274,7 +270,8 @@ async fn list(addr: &str, opt_str: Option<String>) {
             .await
             .unwrap()
             .json::<Vec<Song>>()
-            .await.unwrap()
+            .await
+            .unwrap()
     } else {
         client
             .get("http://".to_string() + addr + "/api/native/list")
@@ -282,7 +279,8 @@ async fn list(addr: &str, opt_str: Option<String>) {
             .await
             .unwrap()
             .json::<Vec<Song>>()
-            .await.unwrap()
+            .await
+            .unwrap()
     };
     println!("{:?}", resp);
 }

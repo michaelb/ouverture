@@ -55,14 +55,25 @@ impl ControlBar {
         debug!("refreshing control");
 
         Command::single(Action::Future(Box::pin(async move {
-            let reply = Server::send_wait(&ServerCommand::GetCurrentSong, &address)
-                .await
-                .unwrap();
-            debug!("asked for new current song, got {reply:?}");
-            match reply {
-                Reply::CurrentSong(song, seek) => Message::ReceivedNewCurrentSong(song, seek),
-                _ => Message::Nothing,
-            }
+            let client = reqwest::Client::new();
+            let song = client
+            .get("http://".to_string() + &address + "/api/native/current_song")
+            .send()
+            .await
+            .unwrap()
+            .json::<Option<Song>>()
+            .await.unwrap();
+
+            let seek = client
+            .get("http://".to_string() + &address + "/api/native/seek")
+            .send()
+            .await
+            .unwrap()
+            .json::<f32>()
+            .await.unwrap();
+            debug!("asked for new current song, got {song:?}");
+
+            Message::ReceivedNewCurrentSong(song, seek)
         })))
     }
 

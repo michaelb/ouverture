@@ -16,7 +16,7 @@ use crate::config::Config;
 use crate::Message;
 use log::{debug, trace, warn};
 
-use std::any::{Any, TypeId};
+use std::any::{Any, TypeId, type_name};
 
 mod control_bar;
 // pub mod list;
@@ -171,15 +171,17 @@ impl Application for Panes {
                 return list.update(AskRefreshList(pane));
             }
             ReceivedNewList(songs) => {
+                debug!("received new songs list: {:?}", songs);
                 let long_self : &mut Panes = unsafe { &mut *(self as *mut Panes) };
                 // acutally, we won't use self after the a couple lines,
                 // but rustc can't tell
+                debug!("list pane type {:?}", TypeId::of::<list::List>());
                 let commands: Vec<_> = long_self.panes
                     .iter_mut()
                     .map(|t| t.1)
-                    .filter(|c| c.type_id() == TypeId::of::<list::List>())
-                    .map(|c| c.as_any_mut().downcast_mut::<list::List>().unwrap())
-                    .map(|l| l.update(ReceivedNewList(songs.clone())))
+                    .map(|c| c.as_any_mut().downcast_mut::<list::List>())
+                    .filter(|opt| opt.is_some())
+                    .map(|l| l.unwrap().update(ReceivedNewList(songs.clone())))
                     .collect();
                 // let commands: Vec<_> = self
                 //     .panes
