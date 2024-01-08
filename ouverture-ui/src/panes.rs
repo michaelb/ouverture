@@ -19,7 +19,6 @@ use log::{debug, trace, warn};
 use std::any::{Any, TypeId};
 
 mod control_bar;
-// pub mod list;
 pub mod list;
 mod menu;
 

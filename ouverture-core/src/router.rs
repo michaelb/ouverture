@@ -10,6 +10,7 @@ use tokio::time::{self, Duration};
 use axum::{routing::get, Router};
 
 use crate::api::native::Native;
+use crate::api::subsonic::Subsonic;
 
 pub struct RouterTask {
     pub addr: SocketAddr,
@@ -37,7 +38,8 @@ async fn router(listener: TcpListener, server: &'static Server) {
     debug!("launched API router");
 
     let native_api = Native::route();
-    let api_routes: Router<&'static Server> = Router::new().nest("/native", native_api);
+    let subsonic_api = Subsonic::route();
+    let api_routes: Router<&'static Server> = Router::new().nest("/native", native_api).nest("/subsonic", subsonic_api);
 
     let app = Router::new().route("/", get(root)).nest("/api", api_routes);
     axum::serve(listener, app.with_state(server).into_make_service())
