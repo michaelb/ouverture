@@ -1,6 +1,7 @@
 use log::debug;
 use std::{net::SocketAddr, sync::atomic::Ordering};
 use tokio::{net::TcpListener, task::JoinHandle};
+use tower_http::trace::TraceLayer;
 
 use crate::server::Server;
 use crate::STOP_FLAG;
@@ -35,13 +36,18 @@ pub async fn wait(router: &mut RouterTask) {
 }
 
 async fn router(listener: TcpListener, server: &'static Server) {
-    debug!("launched API router");
+    debug!("launching API router");
 
     let native_api = Native::route();
     let subsonic_api = Subsonic::route();
-    let api_routes: Router<&'static Server> = Router::new().nest("/native", native_api).nest("/subsonic", subsonic_api);
+    let api_routes: Router<&'static Server> = Router::new()
+        .nest("/native", native_api)
+        .nest("/subsonic", subsonic_api);
 
-    let app = Router::new().route("/", get(root)).nest("/api", api_routes);
+    let app = Router::new()
+        .route("/", get(root))
+        .nest("/api", api_routes)
+        .layer(TraceLayer::new_for_http());
     axum::serve(listener, app.with_state(server).into_make_service())
         .with_graceful_shutdown(signal())
         .await

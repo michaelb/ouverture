@@ -1,33 +1,43 @@
 use serde::{Deserialize, Serialize};
 
-
 use strum_macros::{Display, EnumIter, EnumString};
 
+use std::path::PathBuf;
 use std::sync::atomic::Ordering;
 
 use crate::config::Config;
+use crate::database::song;
 use crate::music::song::Song;
 use crate::STOP_FLAG;
 use color_eyre::Result;
+use itertools::Itertools;
 
 use log::{debug, error, trace, warn};
 
 use crate::audio::AudioTask;
 use crate::router::{start_router, wait, RouterTask};
 
+use sea_orm::entity::prelude::*;
+use sea_orm::Database;
+
 pub struct Server {
     pub config: Config,
+    pub db: DatabaseConnection,
     pub audio_task: Option<AudioTask>, // this task has for only role to send queued songs to the audio thread
     // when it finishes playing a song
     pub router_task: Option<RouterTask>,
 }
 
 impl Server {
-    pub fn new(config: &Config) -> Self {
+    pub async fn new(config: &Config) -> Self {
+  let database_url = "postgres://ouverture:ouverture@localhost:".to_string()
+            + &config.database_port.to_string()
+            + "/ouverture";
         Server {
             config: config.clone(),
             audio_task: None,
             router_task: None,
+            db: Database::connect(&database_url).await.unwrap()
         }
     }
 
@@ -56,6 +66,20 @@ impl Server {
 
         Ok(())
     }
+
+    pub fn music_folders(&self) -> Vec<PathBuf> {
+        self.config.library.clone()
+    }
+
+    pub async fn list_songs(&self) -> Vec<Song> {
+        let song_found: Vec<song::Model> = song::Entity::find().all(&self.db).await.unwrap();
+        song_found.into_iter().map(|m| Song::from(m)).collect()
+    }
+    pub async fn list_artists(&self) -> Vec<String> {
+
+        let song_found: Vec<song::Model> = song::Entity::find().all(&self.db).await.unwrap();
+        song_found.into_iter().map(|m| Song::from(m).artist).filter(|os| os.is_some()).map(|os| os.unwrap()).unique().collect()
+    }
 }
 
 #[non_exhaustive]
@@ -82,4 +106,3 @@ pub enum Command {
     Restart,
     Stop,
 }
-

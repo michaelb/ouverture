@@ -38,7 +38,7 @@ pub async fn list(config: &Config, _query: Option<String>) -> Vec<Song> {
         + "/ouverture";
     let db = Database::connect(&database_url).await.unwrap();
 
-    let song_found: Vec<setup::Model> = setup::Entity::find().all(&db).await.unwrap();
+    let song_found: Vec<song::Model> = song::Entity::find().all(&db).await.unwrap();
     let song_found: Vec<Song> = song_found.into_iter().map(|m| Song::from(m)).collect();
 
     println!("{song_found:?}");

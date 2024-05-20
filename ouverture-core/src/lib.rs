@@ -85,7 +85,7 @@ pub async fn start(config: Config) -> Result<()> {
         // test_db(config).await;
 
         trace!("database up");
-        let mut server = Server::new(&config);
+        let mut server = Server::new(&config).await;
         let server_exit_status = server.run().await;
 
         debug!("stopping database");
