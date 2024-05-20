@@ -1,4 +1,8 @@
 pub mod setup;
+pub mod song;
+pub mod artist;
+pub mod album;
+
 
 use pg_embed::pg_enums::PgAuthMethod;
 use pg_embed::pg_fetch::{PgFetchSettings, PG_V13};
@@ -78,7 +82,7 @@ pub async fn start_db(pg: &mut PgEmbed, config: Config) -> Result<()> {
             + "/ouverture";
 
         let conn = Database::connect(&database_url).await?;
-        let _ = setup::create_post_table(&conn).await;
+        let _ = setup::create_post_table(&conn).await.unwrap();
     }
 
     Ok(())
@@ -90,7 +94,7 @@ pub async fn add_db(config: &Config, song: Song) -> Result<()> {
         + "/ouverture";
     let db = Database::connect(&database_url).await.unwrap();
     debug!("Adding song {song:?}");
-    setup::ActiveModel::from(song).insert(&db).await?;
+    song::ActiveModel::from(song).insert(&db).await?;
     debug!("Song added to db successfully!");
     Ok(())
 }
@@ -101,7 +105,7 @@ pub async fn test_db(config: Config) {
         + "/ouverture";
     let db = Database::connect(&database_url).await.unwrap();
     debug!("test DB connection established");
-    let test_song = setup::ActiveModel {
+    let test_song = song::ActiveModel {
         title: Set(Some("test title".to_owned())),
         ..Default::default()
     };
@@ -109,6 +113,6 @@ pub async fn test_db(config: Config) {
     let res = test_song.insert(&db).await.unwrap();
     debug!("insert result : {:?}", res);
 
-    let song_found: Option<setup::Model> = setup::Entity::find_by_id(1).one(&db).await.unwrap();
+    let song_found: Option<song::Model> = song::Entity::find_by_id(1).one(&db).await.unwrap();
     debug!("song found: {:?}", song_found);
 }
