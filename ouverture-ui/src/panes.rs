@@ -1,5 +1,4 @@
 use iced::executor;
-use iced::keyboard;
 use iced::theme::Theme;
 use iced::widget::pane_grid::{self, PaneGrid};
 use iced::widget::{button, column, container, scrollable, text};
@@ -68,7 +67,7 @@ impl Application for Panes {
             Split(axis, pane) => {
                 let result =
                     self.panes
-                        .split(axis, &pane, Box::new(Editor::new(self.panes_created)));
+                        .split(axis, pane, Box::new(Editor::new(self.panes_created)));
 
                 if let Some((pane, _)) = result {
                     self.focus = Some(pane);
@@ -80,7 +79,7 @@ impl Application for Panes {
                 if let Some(pane) = self.focus {
                     let result =
                         self.panes
-                            .split(axis, &pane, Box::new(Editor::new(self.panes_created)));
+                            .split(axis, pane, Box::new(Editor::new(self.panes_created)));
 
                     if let Some((pane, _)) = result {
                         self.focus = Some(pane);
@@ -91,7 +90,7 @@ impl Application for Panes {
             }
             FocusAdjacent(direction) => {
                 if let Some(pane) = self.focus {
-                    if let Some(adjacent) = self.panes.adjacent(&pane, direction) {
+                    if let Some(adjacent) = self.panes.adjacent(pane, direction) {
                         self.focus = Some(adjacent);
                     }
                 }
@@ -100,24 +99,24 @@ impl Application for Panes {
                 self.focus = Some(pane);
             }
             Resized(pane_grid::ResizeEvent { split, ratio }) => {
-                self.panes.resize(&split, ratio);
+                self.panes.resize(split, ratio);
             }
             Dragged(pane_grid::DragEvent::Dropped { pane, target }) => {
                 if let iced::widget::pane_grid::Target::Pane(dest_pane, _region) = &target {
-                    self.panes.swap(&pane, &dest_pane);
+                    self.panes.swap(pane, *dest_pane);
                 } else {
                     debug!("dragged a pane on an edge: doing nothing");
                 }
             }
             Dragged(_) => {}
             Close(pane) => {
-                if let Some((_, sibling)) = self.panes.close(&pane) {
+                if let Some((_, sibling)) = self.panes.close(pane) {
                     self.focus = Some(sibling);
                 }
             }
             CloseFocused => {
                 if let Some(pane) = self.focus {
-                    if let Some((_, sibling)) = self.panes.close(&pane) {
+                    if let Some((_, sibling)) = self.panes.close(pane) {
                         self.focus = Some(sibling);
                     }
                 }
@@ -126,22 +125,22 @@ impl Application for Panes {
                 let menu = menu::Menu::new();
                 let result = self
                     .panes
-                    .split(pane_grid::Axis::Horizontal, &pane, Box::new(menu));
+                    .split(pane_grid::Axis::Horizontal, pane, Box::new(menu));
 
                 if let Some((pane, _)) = result {
                     self.focus = Some(pane);
                 }
-                self.panes.close(&pane);
+                self.panes.close(pane);
             }
             IntoList(pane) => {
                 let list = list::List::new(self.config.clone());
                 let result = self
                     .panes
-                    .split(pane_grid::Axis::Horizontal, &pane, Box::new(list));
+                    .split(pane_grid::Axis::Horizontal, pane, Box::new(list));
 
                 if let Some((new_pane, _)) = result {
                     self.focus = Some(new_pane);
-                    self.panes.close(&pane);
+                    self.panes.close(pane);
                     return Command::single(Message::AskRefreshList(new_pane).into());
                 } else {
                     warn!("failed to close pane, keeping current one");
@@ -152,17 +151,17 @@ impl Application for Panes {
                 let menu = control_bar::ControlBar::new(&self.config);
                 let result = self
                     .panes
-                    .split(pane_grid::Axis::Horizontal, &pane, Box::new(menu));
+                    .split(pane_grid::Axis::Horizontal, pane, Box::new(menu));
 
                 if let Some((pane, _)) = result {
                     self.focus = Some(pane);
                 }
-                self.panes.close(&pane);
+                self.panes.close(pane);
             }
             AskRefreshList(pane) => {
                 let list: &mut list::List = self
                     .panes
-                    .get_mut(&pane)
+                    .get_mut(pane)
                     .unwrap()
                     .as_any_mut()
                     .downcast_mut::<list::List>()
@@ -243,25 +242,25 @@ impl Application for Panes {
 //     panes.get_mut(pane).unwrap_or(&mut (Box::new(NoContent{}) as Box<dyn Content>))
 // }
 
-fn handle_hotkey(key_code: keyboard::KeyCode) -> Option<Message> {
-    use keyboard::KeyCode;
-    use pane_grid::{Axis, Direction};
-
-    let direction = match key_code {
-        KeyCode::Up => Some(Direction::Up),
-        KeyCode::Down => Some(Direction::Down),
-        KeyCode::Left => Some(Direction::Left),
-        KeyCode::Right => Some(Direction::Right),
-        _ => None,
-    };
-
-    match key_code {
-        KeyCode::V => Some(Message::SplitFocused(Axis::Vertical)),
-        KeyCode::H => Some(Message::SplitFocused(Axis::Horizontal)),
-        KeyCode::W => Some(Message::CloseFocused),
-        _ => direction.map(Message::FocusAdjacent),
-    }
-}
+// fn handle_hotkey(key_code: keyboard::KeyCode) -> Option<Message> {
+// use keyboard::KeyCode;
+// use pane_grid::{Axis, Direction};
+//
+// let direction = match key_code {
+//     KeyCode::Up => Some(Direction::Up),
+//     KeyCode::Down => Some(Direction::Down),
+//     KeyCode::Left => Some(Direction::Left),
+//     KeyCode::Right => Some(Direction::Right),
+//     _ => None,
+// };
+//
+// match key_code {
+//     KeyCode::V => Some(Message::SplitFocused(Axis::Vertical)),
+//     KeyCode::H => Some(Message::SplitFocused(Axis::Horizontal)),
+//     KeyCode::W => Some(Message::CloseFocused),
+//     _ => direction.map(Message::FocusAdjacent),
+// }
+// }
 
 pub trait Content {
     fn view(&self, pane: pane_grid::Pane, total_panes: usize) -> Element<Message>;

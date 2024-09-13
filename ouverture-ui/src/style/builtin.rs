@@ -65,13 +65,16 @@ impl BuiltinTheme {
     }
 
     pub fn alliance() -> Theme {
-        Theme::custom(theme::Palette {
-            background: hex_to_color("#111111").unwrap(),
-            primary: hex_to_color("#3f2b56").unwrap(),
-            success: hex_to_color("#4a3c1c").unwrap(),
-            text: hex_to_color("#828282").unwrap(),
-            danger: hex_to_color("#992B2B").unwrap(),
-        })
+        Theme::custom(
+            String::from("alliance"),
+            theme::Palette {
+                background: hex_to_color("#111111").unwrap(),
+                primary: hex_to_color("#3f2b56").unwrap(),
+                success: hex_to_color("#4a3c1c").unwrap(),
+                text: hex_to_color("#828282").unwrap(),
+                danger: hex_to_color("#992B2B").unwrap(),
+            },
+        )
     }
     //
     //     pub fn horde() -> Theme {
