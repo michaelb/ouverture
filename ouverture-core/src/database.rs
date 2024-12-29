@@ -24,7 +24,7 @@ pub async fn setup_db(config: Config) -> Result<PgEmbed> {
     std::fs::create_dir_all(config.database_dir.clone())?;
     let pg_settings = PgSettings {
         // Where to store the postgresql database
-        database_dir: PathBuf::from(config.database_dir),
+        database_dir: config.database_dir,
         port: config.database_port as u16,
         user: "ouverture".to_string(),
         password: "ouverture".to_string(),
@@ -59,6 +59,8 @@ pub async fn setup_db(config: Config) -> Result<PgEmbed> {
 
     // Download, unpack, create password file and database cluster
     pg.setup().await.map_err(|e| eyre!(e.to_string()))?;
+
+    info!("postgres db setup ok");
 
     Ok(pg)
 }
