@@ -70,6 +70,8 @@ Very much at Work-In-*Planning* stage now 😄
 - [yt-dlp](https://github.com/yt-dlp/yt-dlp)
 - [rustic](https://github.com/rustic-music-player/rustic)
 - [subsonic](http://www.subsonic.org/pages/index.jsp)
+- [octo-fiesta](https://github.com/V1ck3s/octo-fiesta)
+- [soulsync](https://github.com/Nezreka/SoulSync)
 
 ## Maybe-useful ressources
 
